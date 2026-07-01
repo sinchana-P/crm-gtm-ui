@@ -30,6 +30,7 @@ export const ADMIN_ONLY_NAV_IDS = new Set([
   "settings-fields",
   "settings-consent",
   "settings-integrations",
+  "settings-whatsapp",
 ]);
 
 /** Routes that redirect representatives to dashboard */
@@ -51,6 +52,7 @@ export const ADMIN_ONLY_PATHS = [
   "/settings/fields",
   "/settings/consent",
   "/settings/integrations",
+  "/settings/whatsapp",
 ];
 
 export function isAdminView(level: ViewLevel) {
@@ -124,6 +126,14 @@ export function filterInboxByView(
 ): InboxMessage[] {
   if (isAdminView(level)) return messages;
   return messages.filter((m) => m.assignee === CURRENT_REP.name);
+}
+
+export function filterWhatsAppThreadsByView<T extends { assignee: string }>(
+  threads: T[],
+  level: ViewLevel
+): T[] {
+  if (isAdminView(level)) return threads;
+  return threads.filter((t) => t.assignee === CURRENT_REP.name);
 }
 
 export function scopedTitle(_level: ViewLevel, label: string): string {

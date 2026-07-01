@@ -8,6 +8,7 @@ export const PORTAL_NAV: PortalNavItem[] = [
   { id: "forms", label: "Forms", href: "/portal/forms", icon: "FileInput" },
   { id: "signatures", label: "Signatures", href: "/portal/signatures", icon: "PenLine" },
   { id: "surveys", label: "Surveys", href: "/portal/surveys", icon: "ClipboardList" },
+  { id: "messages", label: "Messages", href: "/portal/messages", icon: "MessageCircle" },
   { id: "profile", label: "Profile", href: "/portal/profile", icon: "User" },
   { id: "help", label: "Help", href: "/portal/help", icon: "CircleHelp" },
 ];
@@ -20,6 +21,7 @@ export function getPortalNavWithBadges(): PortalNavItem[] {
     if (item.id === "documents") return { ...item, badge: stats.pendingUploads };
     if (item.id === "signatures") return { ...item, badge: stats.pendingSignatures };
     if (item.id === "surveys") return { ...item, badge: stats.pendingSurveys };
+    if (item.id === "messages") return { ...item, badge: stats.unreadMessages };
     return item;
   });
 }

@@ -13,6 +13,7 @@ import {
   List,
   Mail,
   Megaphone,
+  MessageCircle,
   MoreHorizontal,
   PenLine,
   Phone,
@@ -42,6 +43,7 @@ import { ConvertLeadDialog } from "@/components/contacts/convert-lead-dialog";
 import { RecordProfileLayout } from "@/components/contacts/record-profile-layout";
 import { SendDocumentRequestDialog } from "@/components/outreach/send-document-request-dialog";
 import { SendSurveyDialog } from "@/components/outreach/send-survey-dialog";
+import { SendWhatsAppDialog } from "@/components/whatsapp/send-whatsapp-dialog";
 import { HealthBadge } from "@/components/shared/health-badge";
 import { LifecycleBadge } from "@/components/shared/lifecycle-badge";
 import {
@@ -94,6 +96,7 @@ const QUICK_ACTIONS = [
   { id: "note", label: "Note", icon: StickyNote },
   { id: "email", label: "Email", icon: Mail },
   { id: "call", label: "Call", icon: Phone },
+  { id: "whatsapp", label: "WhatsApp", icon: MessageCircle },
   { id: "task", label: "Task", icon: Calendar },
   { id: "meeting", label: "Meeting", icon: Calendar },
 ] as const;
@@ -347,6 +350,7 @@ export function ContactRecordView({
   const [convertOpen, setConvertOpen] = useState(false);
   const [docRequestOpen, setDocRequestOpen] = useState(false);
   const [surveySendOpen, setSurveySendOpen] = useState(false);
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
   const isCasesEnabled = usePluginStore((s) => s.isEnabled("cases"));
   const isEsignEnabled = usePluginStore((s) => s.isEnabled("esign"));
   const isMarketingEnabled = usePluginStore((s) => s.isEnabled("marketing"));
@@ -366,6 +370,10 @@ export function ContactRecordView({
     }
     if (action === "Send survey") {
       setSurveySendOpen(true);
+      return;
+    }
+    if (action === "WhatsApp") {
+      setWhatsappOpen(true);
       return;
     }
     toast.success(`${action} queued for ${contact.firstName} ${contact.lastName}`);
@@ -791,6 +799,11 @@ export function ContactRecordView({
         contactId={contact.id}
         open={surveySendOpen}
         onOpenChange={setSurveySendOpen}
+      />
+      <SendWhatsAppDialog
+        contactId={contact.id}
+        open={whatsappOpen}
+        onOpenChange={setWhatsappOpen}
       />
     </>
   );

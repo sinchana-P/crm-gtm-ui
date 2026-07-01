@@ -144,6 +144,7 @@ export default function SettingsIntegrationsPage() {
         description="Business messaging via Meta Cloud API."
         items={messaging}
         onTest={testConnection}
+        configureHref="/settings/whatsapp"
       />
 
       <IntegrationGroup
@@ -161,11 +162,13 @@ function IntegrationGroup({
   description,
   items,
   onTest,
+  configureHref,
 }: {
   title: string;
   description: string;
   items: IntegrationStatus[];
   onTest: (id: string) => void;
+  configureHref?: string;
 }) {
   return (
     <Card>
@@ -192,6 +195,11 @@ function IntegrationGroup({
               ) : null}
             </div>
             <div className="flex gap-2">
+              {configureHref ? (
+                <Link href={configureHref} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                  Configure
+                </Link>
+              ) : null}
               {item.status === "connected" ? (
                 <Button variant="outline" size="sm" onClick={() => onTest(item.id)}>
                   Test

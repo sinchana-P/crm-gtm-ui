@@ -395,6 +395,14 @@ export const PORTAL_NOTIFICATIONS: PortalNotification[] = [
     createdAt: "2026-06-24T08:30:00Z",
     href: "/portal/requests/pr1",
   },
+  {
+    id: "n4",
+    title: "New WhatsApp message",
+    body: "Priya Sharma: Reminder to upload your company PAN card.",
+    read: false,
+    createdAt: "2026-06-24T11:00:00Z",
+    href: "/portal/messages",
+  },
 ];
 
 export const PORTAL_FAQ = [
@@ -407,8 +415,8 @@ export const PORTAL_FAQ = [
     a: "Your assigned representative is shown on the home page and profile.",
   },
   {
-    q: "How long until my request is answered?",
-    a: "Urgent requests target same-day response. SLA is shown on each request.",
+    q: "How do I message my account team?",
+    a: "Use Messages to chat on WhatsApp. Your rep sees replies in their CRM inbox.",
   },
 ];
 
@@ -427,6 +435,9 @@ export function getPortalStats() {
     (d) => d.category === "requested" && d.status === "pending"
   ).length;
   const pendingSurveys = PORTAL_SURVEYS.filter((s) => s.status === "pending").length;
+  const unreadMessages = PORTAL_NOTIFICATIONS.filter(
+    (n) => !n.read && n.href?.includes("messages")
+  ).length + 1;
 
   return {
     actionCount: PORTAL_ACTIONS.length,
@@ -434,6 +445,7 @@ export function getPortalStats() {
     pendingSignatures,
     pendingUploads,
     pendingSurveys,
+    unreadMessages,
     unreadNotifications: PORTAL_NOTIFICATIONS.filter((n) => !n.read).length,
   };
 }

@@ -197,6 +197,7 @@ export interface EmailTemplate {
 
 export interface InboxMessage {
   id: string;
+  contactId?: string;
   contactName: string;
   contactEmail: string;
   channel: "email" | "whatsapp";

@@ -58,6 +58,7 @@ export const NAV_ITEMS: NavItem[] = [
     children: [
       { id: "templates", label: "Templates", href: "/marketing/templates", icon: "LayoutTemplate", section: "marketing", plugin: "marketing" },
       { id: "inbox", label: "Inbox", href: "/marketing/inbox", icon: "Inbox", section: "marketing", plugin: "marketing" },
+      { id: "whatsapp", label: "WhatsApp", href: "/marketing/whatsapp", icon: "MessageCircle", section: "marketing", plugin: "marketing" },
       { id: "calendar", label: "Campaign Calendar", href: "/marketing/calendar", icon: "Calendar", section: "marketing", plugin: "marketing" },
     ],
   },
@@ -95,6 +96,7 @@ export const NAV_ITEMS: NavItem[] = [
     children: [
       { id: "settings-plugins", label: "Plugins", href: "/settings/plugins", icon: "Puzzle", section: "settings" },
       { id: "settings-integrations", label: "Integrations", href: "/settings/integrations", icon: "Plug", section: "settings" },
+      { id: "settings-whatsapp", label: "WhatsApp", href: "/settings/whatsapp", icon: "MessageCircle", section: "settings" },
     ],
   },
 ];

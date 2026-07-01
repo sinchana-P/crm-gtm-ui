@@ -111,6 +111,7 @@ export default function PortalHomePage() {
             <p className="text-sm text-muted-foreground">Contact {PORTAL_CUSTOMER.accountOwner} or browse FAQs.</p>
           </div>
           <div className="flex gap-2">
+            <ButtonLink href="/portal/messages" variant="outline">WhatsApp</ButtonLink>
             <ButtonLink href="/portal/help" variant="outline">Help center</ButtonLink>
             <Button variant="outline" onClick={() => window.open(`mailto:${PORTAL_CUSTOMER.accountOwnerEmail}`)}>Email rep</Button>
           </div>

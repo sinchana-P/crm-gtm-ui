@@ -323,9 +323,12 @@ export const TEMPLATE_PLACEHOLDERS = [
 ];
 
 export const MOCK_INBOX: InboxMessage[] = [
-  { id: "i1", contactName: "Ananya Iyer", contactEmail: "ananya.iyer@techcorp.in", channel: "email", subject: "Re: Product brochure", preview: "Thanks for sending the brochure. Can we schedule a call next week?", assignee: "Priya Sharma", unread: true, receivedAt: "2026-06-24T08:15:00Z" },
-  { id: "i2", contactName: "Rahul Verma", contactEmail: "+91 99887 76655", channel: "whatsapp", subject: "Monsoon offer inquiry", preview: "Is the 15% discount applicable on bulk orders?", assignee: "Arjun Mehta", unread: false, receivedAt: "2026-06-23T16:40:00Z" },
-  { id: "i3", contactName: "Vikram Singh", contactEmail: "vikram.singh@startup.io", channel: "email", subject: "Demo access", preview: "I still haven't received demo credentials. Please resend.", unread: true, receivedAt: "2026-06-23T11:20:00Z" },
+  { id: "i1", contactId: "c1", contactName: "Ananya Iyer", contactEmail: "ananya.iyer@techcorp.in", channel: "email", subject: "Re: Product brochure", preview: "Thanks for sending the brochure. Can we schedule a call next week?", assignee: "Priya Sharma", unread: true, receivedAt: "2026-06-24T08:15:00Z" },
+  { id: "i2", contactId: "c2", contactName: "Rahul Verma", contactEmail: "+91 99887 76655", channel: "whatsapp", subject: "Monsoon offer inquiry", preview: "Is the 15% discount applicable on bulk orders?", assignee: "Arjun Mehta", unread: false, receivedAt: "2026-06-23T16:40:00Z" },
+  { id: "i3", contactId: "c4", contactName: "Vikram Singh", contactEmail: "vikram.singh@startup.io", channel: "email", subject: "Demo access", preview: "I still haven't received demo credentials. Please resend.", assignee: "Neha Reddy", unread: true, receivedAt: "2026-06-23T11:20:00Z" },
+  { id: "i4", contactId: "c1", contactName: "Ananya Iyer", contactEmail: "+91 98765 43210", channel: "whatsapp", subject: "Demo access details", preview: "Admin is security@techcorp.in. IP range 103.21.44.0/24", assignee: "Priya Sharma", unread: true, receivedAt: "2026-06-24T10:30:00Z" },
+  { id: "i5", contactId: "c3", contactName: "Sunita Patil", contactEmail: "+91 91234 56789", channel: "whatsapp", subject: "Water supply complaint", preview: "COMPLAINT — No water supply Ward 12 for 48 hours", assignee: "Priya Sharma", unread: true, receivedAt: "2026-06-24T08:00:00Z" },
+  { id: "i6", contactId: "c5", contactName: "Meera Krishnan", contactEmail: "+91 99001 22334", channel: "whatsapp", subject: "NDA resend request", preview: "Can you resend on WhatsApp? Email went to spam.", assignee: "Priya Sharma", unread: true, receivedAt: "2026-06-24T07:45:00Z" },
 ];
 
 export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
@@ -947,3 +950,17 @@ export {
   getMagicLinkSession,
   getOutreachDispatch,
 } from "./outreach";
+
+export {
+  PORTAL_WHATSAPP_MESSAGES,
+  WHATSAPP_BOT_FLOWS,
+  WHATSAPP_BROADCASTS,
+  WHATSAPP_CONFIG,
+  WHATSAPP_STATS,
+  WHATSAPP_TEMPLATES,
+  WHATSAPP_THREADS,
+  getRepWhatsAppStats,
+  getWhatsAppTemplate,
+  getWhatsAppThread,
+  getWhatsAppThreadsForContact,
+} from "./whatsapp";
