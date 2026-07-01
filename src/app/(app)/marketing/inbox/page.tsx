@@ -1,0 +1,197 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Inbox, Mail, MessageCircle, Send } from "lucide-react";
+import { PageHeader } from "@/components/shared/page-header";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { MOCK_INBOX, SNIPPETS } from "@/lib/mock-data";
+import { formatRelative } from "@/lib/format";
+import { useViewScope } from "@/hooks/use-view-scope";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+export default function MarketingInboxPage() {
+  const { filterInbox, isRep, title, rep } = useViewScope();
+  const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+  const [channel, setChannel] = useState<"all" | "email" | "whatsapp">("all");
+  const [reply, setReply] = useState("");
+
+  const scopedInbox = useMemo(() => filterInbox(MOCK_INBOX), [filterInbox]);
+
+  const filtered = scopedInbox.filter(
+    (m) => channel === "all" || m.channel === channel
+  );
+  const active = filtered.find((m) => m.id === selectedId) ?? filtered[0];
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title={title("Inbox")}
+        description={
+          isRep
+            ? `Messages assigned to ${rep.name}. Reply and log to contact timeline.`
+            : "Unified email and WhatsApp replies. Assign, respond, and log to contact timeline."
+        }
+      />
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(280px,320px)_1fr] lg:items-start">
+        <Card className="flex flex-col shadow-none">
+          <CardHeader className="space-y-3 pb-3">
+            <CardTitle className="text-base">Messages</CardTitle>
+            <Select
+              value={channel}
+              onValueChange={(v) => setChannel(v as typeof channel)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All channels</SelectItem>
+                <SelectItem value="email">Email</SelectItem>
+                <SelectItem value="whatsapp">WhatsApp</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ScrollArea className="h-80 max-h-[50vh]">
+              {filtered.map((msg) => (
+                <button
+                  key={msg.id}
+                  type="button"
+                  onClick={() => setSelectedId(msg.id)}
+                  className={cn(
+                    "flex w-full flex-col gap-1 border-b px-4 py-3 text-left transition-colors hover:bg-muted/50",
+                    active?.id === msg.id && "bg-muted"
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-sm font-medium">
+                      {msg.contactName}
+                    </span>
+                    {msg.unread && (
+                      <span className="size-2 shrink-0 rounded-full bg-primary" />
+                    )}
+                  </div>
+                  <p className="truncate text-xs font-medium text-foreground">
+                    {msg.subject}
+                  </p>
+                  <p className="line-clamp-2 text-xs text-muted-foreground">
+                    {msg.preview}
+                  </p>
+                  <div className="flex items-center gap-2 pt-1">
+                    {msg.channel === "email" ? (
+                      <Mail className="size-3 text-muted-foreground" />
+                    ) : (
+                      <MessageCircle className="size-3 text-muted-foreground" />
+                    )}
+                    <span className="text-[10px] text-muted-foreground">
+                      {formatRelative(msg.receivedAt)}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        <Card className="flex min-h-[28rem] flex-col shadow-none">
+          {active ? (
+            <>
+              <CardHeader className="border-b pb-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-base">{active.subject}</CardTitle>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {active.contactName} · {active.contactEmail}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="capitalize">
+                      {active.channel}
+                    </Badge>
+                    <Select defaultValue={active.assignee ?? "unassigned"}>
+                      <SelectTrigger className="w-[160px]">
+                        <SelectValue placeholder="Assign to" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Priya Sharma">Priya Sharma</SelectItem>
+                        <SelectItem value="Arjun Mehta">Arjun Mehta</SelectItem>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-1 flex-col gap-4 pt-4">
+                <div className="rounded-lg border bg-muted/30 p-4 text-sm">
+                  {active.preview}
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Reply</Label>
+                  <Textarea
+                    rows={4}
+                    value={reply}
+                    onChange={(e) => setReply(e.target.value)}
+                    placeholder="Type your reply..."
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {SNIPPETS.map((s) => (
+                      <Button
+                        key={s.id}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setReply(s.body)}
+                      >
+                        {s.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-auto flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => toast.message("Saved as draft")}
+                  >
+                    Save draft
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      toast.success("Reply sent and logged to contact timeline");
+                      setReply("");
+                    }}
+                  >
+                    <Send className="mr-2 size-4" />
+                    Send reply
+                  </Button>
+                </div>
+              </CardContent>
+            </>
+          ) : (
+            <CardContent className="flex flex-1 items-center justify-center text-muted-foreground">
+              <Inbox className="mr-2 size-5" />
+              Select a message
+            </CardContent>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+}

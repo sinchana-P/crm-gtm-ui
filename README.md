@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Connect CRM GTM UI
 
-## Getting Started
+Standalone UI prototype for **Connect CRM V1** — plugin-based CRM with four modules:
 
-First, run the development server:
+| Module | Type | SKU |
+|--------|------|-----|
+| Contact Management | Core (always on) | Connect Contacts |
+| Marketing & Sequences | Plugin | Connect Reach |
+| Case Manager Integration | Plugin | Connect Resolve |
+| E-sign | Plugin | Connect Sign |
+
+## Stack
+
+- **Next.js 16** (App Router)
+- **TypeScript**
+- **Tailwind CSS v4**
+- **shadcn/ui** (black & white theme, light/dark)
+- **Zustand** (plugin entitlements, persisted)
+- **TanStack Table**, **Recharts**, **Lucide icons**
+
+## Quick start
 
 ```bash
+cd crm-gtm-ui
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Plugin model
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Enable or disable plugins under **Settings → Plugins**. Sidebar and routes adapt automatically:
 
-## Learn More
+- **Contact-only** — Dashboard, Leads, Contacts, Lists, Import, Reports, etc.
+- **+ Marketing** — Campaigns, Sequences, Forms, Inbox, Calendar, Automations
+- **+ Cases** — Case dashboard, queue, templates, create-from-contact
+- **+ E-sign** — Envelopes, templates, bulk send
 
-To learn more about Next.js, take a look at the following resources:
+## Project structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+  app/(app)/          # Authenticated CRM shell
+    dashboard/        # Contact Health + Work Queue
+    leads|contacts|customers/
+    lists|duplicates|import|documents|surveys|reports/
+    marketing/        # Marketing plugin routes
+    cases/            # Case Manager plugin
+    esign/            # E-sign plugin
+    settings/         # Org settings + plugin toggles
+  components/
+    layout/           # Sidebar, header, shell
+    contacts/         # Record drawer, convert, merge
+    cases/            # Create case dialog, timeline
+    esign/            # Send envelope dialog
+    marketing/        # Sequence packs, badges
+    shared/           # PageHeader, DataTable, StatCard
+  lib/
+    mock-data/        # Demo data for all modules
+    stores/           # Plugin entitlements
+    navigation.ts     # Dynamic nav by plugin
+    types/
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Feature coverage
 
-## Deploy on Vercel
+Aligned with **Connect CRM GTM V1 Feature Catalog** (PDF):
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Contact: CRUD, conversion, dedupe/merge, assignment, scoring, AI brief, work queue, import wizard, surveys, documents
+- Marketing: campaigns, sequences (marketing + sales cadence), segments, forms, templates, inbox, calendar, automations, deliverability
+- Cases: Kaayaka integration UI, create case in 2 clicks, SLA badges, queue, templates
+- E-sign: envelopes, templates, bulk send, sequential/parallel signing UI
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notes
+
+- **UI-only** — uses mock data; no backend wired
+- Intended for product review, GTM demos, and handoff to engineering
+- Parent monorepo: `connect-nx` (separate from production `frontend`)
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Development server |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` | ESLint |
