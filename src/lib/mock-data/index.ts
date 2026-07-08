@@ -2,6 +2,7 @@ import type {
   ActivityItem,
   AssignmentRule,
   Automation,
+  AutomationRecipe,
   CalendarEvent,
   Campaign,
   CampaignDailyStat,
@@ -877,9 +878,26 @@ const DEFAULT_EXIT: SequenceExitConfig = {
   oneActivePerContact: true,
 };
 
+/** Verified marketing sending identities available for marketing-mode sequences. */
+export const MOCK_SENDER_ADDRESSES = [
+  { address: "marketing@connectnx.io", name: "Connect NX Marketing", verified: true },
+  { address: "hello@connectnx.io", name: "Connect NX", verified: true },
+  { address: "events@connectnx.io", name: "Connect NX Events", verified: true },
+  { address: "noreply@connectnx.io", name: "Connect NX (no-reply)", verified: false },
+];
+
+const MARKETING_SENDER = {
+  mode: "marketing_address" as const,
+  fromName: "Connect NX Marketing",
+  fromAddress: "marketing@connectnx.io",
+  replyTo: "marketing@connectnx.io",
+};
+const REP_SENDER = { mode: "rep_inbox" as const };
+
 export const MOCK_SEQUENCES: Sequence[] = [
   {
     id: "s1",
+    sender: MARKETING_SENDER,
     name: "New Lead Welcome",
     description: "Five-step nurture that onboards new leads and hands warm ones to a rep.",
     type: "marketing",
@@ -941,6 +959,7 @@ export const MOCK_SEQUENCES: Sequence[] = [
   },
   {
     id: "s2",
+    sender: REP_SENDER,
     name: "Outbound Sales Cadence",
     description: "Seven-touch sales cadence mixing email, WhatsApp, and manual rep tasks.",
     type: "sales",
@@ -973,6 +992,7 @@ export const MOCK_SEQUENCES: Sequence[] = [
   },
   {
     id: "s3",
+    sender: { mode: "marketing_address", fromName: "Connect NX Events", fromAddress: "events@connectnx.io", replyTo: "events@connectnx.io" },
     name: "Post-Event Follow-up",
     description: "Thanks attendees and routes them to a resource pack after Connect Summit.",
     type: "marketing",
@@ -999,6 +1019,7 @@ export const MOCK_SEQUENCES: Sequence[] = [
   },
   {
     id: "s4",
+    sender: MARKETING_SENDER,
     name: "90-Day Win-back",
     description: "Re-engages dormant contacts; exits anyone who re-engages or unsubscribes.",
     type: "marketing",
@@ -1034,6 +1055,7 @@ export const MOCK_SEQUENCES: Sequence[] = [
   },
   {
     id: "s5",
+    sender: MARKETING_SENDER,
     name: "Diwali 2025 Blast (Archived)",
     description: "Last year's festive drip — kept for reference.",
     type: "marketing",
@@ -1131,6 +1153,7 @@ export const MOCK_SEQUENCE_ENROLLMENTS: SequenceEnrollment[] = [
 export const MOCK_SEQUENCE_TEMPLATES: SequenceTemplate[] = [
   {
     id: "tpl-welcome",
+    sender: { mode: "marketing_address", fromName: "Connect NX", fromAddress: "hello@connectnx.io", replyTo: "hello@connectnx.io" },
     name: "New subscriber welcome",
     description: "Greet new subscribers, set expectations, and drive a first action over 3 emails.",
     type: "marketing",
@@ -1148,6 +1171,7 @@ export const MOCK_SEQUENCE_TEMPLATES: SequenceTemplate[] = [
   },
   {
     id: "tpl-reengage",
+    sender: MARKETING_SENDER,
     name: "Dormant re-engagement",
     description: "Win back contacts who have gone quiet, with a goal exit when they re-engage.",
     type: "marketing",
@@ -1171,6 +1195,7 @@ export const MOCK_SEQUENCE_TEMPLATES: SequenceTemplate[] = [
   },
   {
     id: "tpl-event",
+    sender: { mode: "marketing_address", fromName: "Connect NX Events", fromAddress: "events@connectnx.io", replyTo: "events@connectnx.io" },
     name: "Event reminder + follow-up",
     description: "Countdown reminders before an event and a thank-you with resources after.",
     type: "marketing",
@@ -1188,6 +1213,7 @@ export const MOCK_SEQUENCE_TEMPLATES: SequenceTemplate[] = [
   },
   {
     id: "tpl-sales",
+    sender: REP_SENDER,
     name: "Outbound sales cadence",
     description: "Multi-touch rep cadence: email, WhatsApp, and manual call tasks with reply exit.",
     type: "sales",
@@ -1206,6 +1232,7 @@ export const MOCK_SEQUENCE_TEMPLATES: SequenceTemplate[] = [
   },
   {
     id: "tpl-feedback",
+    sender: MARKETING_SENDER,
     name: "Post-purchase feedback",
     description: "Ask for feedback after a purchase and route detractors to a rep.",
     type: "marketing",
@@ -1317,16 +1344,267 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
   { id: "ce4", title: "Outbound Sales — Day 5", type: "sequence", date: "2026-06-30", channel: "email" },
 ];
 
+const AUTO_DEFAULT_SETTINGS = {
+  reEnrollment: "never" as const,
+  suppressionSegmentId: undefined,
+  quietHours: true,
+};
+
 export const MOCK_AUTOMATIONS: Automation[] = [
-  { id: "au1", name: "Form submit → Welcome sequence", status: "active", trigger: "Form submitted", actions: 3, enrolled: 284, lastRun: "2026-06-24T07:00:00Z" },
-  { id: "au2", name: "Lead score > 80 → Assign rep", status: "active", trigger: "Lead score changed", actions: 2, enrolled: 42, lastRun: "2026-06-23T14:30:00Z" },
-  { id: "au3", name: "Case resolved → NPS survey", status: "paused", trigger: "Case status = resolved", actions: 4, enrolled: 18 },
+  {
+    id: "au1",
+    name: "Form submit → Welcome sequence",
+    description: "When a lead submits the demo form, tag them, enroll them in the welcome sequence, and notify the owner if high-intent.",
+    status: "active",
+    trigger: "Form submitted — Demo Request",
+    category: "Lead nurture",
+    owner: "Priya Sharma",
+    actions: 5,
+    enrolled: 284,
+    activeCount: 46,
+    completedCount: 238,
+    goalMet: 61,
+    lastRun: "2026-07-07T07:00:00Z",
+    createdAt: "2026-05-10T09:00:00Z",
+    updatedAt: "2026-07-06T09:00:00Z",
+    triggers: [{ id: "at1", type: "form_submitted", formId: "f1" }],
+    settings: { ...AUTO_DEFAULT_SETTINGS, goalCondition: "lifecycleStage = mql" },
+    nodes: [
+      { id: "n1", type: "action", label: "Tag as demo-request", actionType: "add_tag", actionSummary: "demo-request", reached: 284, completed: 284 },
+      { id: "n2", type: "action", label: "Enroll in New Lead Welcome", actionType: "enroll_sequence", actionSummary: "New Lead Welcome", reached: 284, completed: 280 },
+      { id: "n3", type: "delay", label: "Delay 1 day", delayMode: "duration", delayValue: 1, delayUnit: "days", reached: 280, completed: 274 },
+      {
+        id: "n4", type: "branch", label: "Lead score above 80?", branchKind: "if_else", reached: 274,
+        branches: [
+          { id: "n4-yes", label: "Yes", condition: "leadScore > 80", nodes: [
+            { id: "n5", type: "action", label: "Rotate to sales owner", actionType: "rotate_owner", actionSummary: "Sales round-robin", reached: 92, completed: 92 },
+            { id: "n6", type: "action", label: "Notify owner — hot lead", actionType: "notify_team", actionSummary: "Email + Slack owner", reached: 92, completed: 92 },
+          ] },
+          { id: "n4-no", label: "No", nodes: [
+            { id: "n7", type: "action", label: "Set lifecycle = lead", actionType: "set_lifecycle", actionSummary: "lead", reached: 182, completed: 182 },
+          ] },
+        ],
+      },
+      { id: "n8", type: "goal", label: "Goal: became an MQL", goalCondition: "lifecycleStage = mql", reached: 61 },
+    ],
+    runLog: [
+      { id: "l1", contactName: "Ananya Iyer", at: "2026-07-07T07:00:12Z", nodeLabel: "Enrolled", outcome: "enrolled", detail: "Submitted Demo Request" },
+      { id: "l2", contactName: "Ananya Iyer", at: "2026-07-07T07:00:13Z", nodeLabel: "Tag as demo-request", outcome: "action" },
+      { id: "l3", contactName: "Ananya Iyer", at: "2026-07-07T07:00:14Z", nodeLabel: "Enroll in New Lead Welcome", outcome: "action", detail: "Enrolled in sequence" },
+      { id: "l4", contactName: "Rahul Verma", at: "2026-07-07T06:40:00Z", nodeLabel: "Lead score above 80?", outcome: "branched", detail: "→ Yes (score 88)" },
+      { id: "l5", contactName: "Rahul Verma", at: "2026-07-07T06:40:01Z", nodeLabel: "Rotate to sales owner", outcome: "action", detail: "Assigned to Arjun Mehta" },
+      { id: "l6", contactName: "Vikram Singh", at: "2026-07-06T18:20:00Z", nodeLabel: "Goal: became an MQL", outcome: "goal_met", detail: "Promoted to MQL" },
+    ],
+  },
+  {
+    id: "au2",
+    name: "Lead score > 80 → Assign rep",
+    description: "Route newly-hot leads to a sales rep and start a sales cadence.",
+    status: "active",
+    trigger: "Lead score changed",
+    category: "Sales routing",
+    owner: "Arjun Mehta",
+    actions: 3,
+    enrolled: 42,
+    activeCount: 8,
+    completedCount: 34,
+    goalMet: 19,
+    lastRun: "2026-07-06T14:30:00Z",
+    createdAt: "2026-04-20T09:00:00Z",
+    updatedAt: "2026-07-01T09:00:00Z",
+    triggers: [{ id: "at2", type: "property_changed", property: "leadScore", operator: "greater_than", value: "80" }],
+    settings: { ...AUTO_DEFAULT_SETTINGS, reEnrollment: "cooldown", reEnrollCooldownDays: 30 },
+    nodes: [
+      { id: "n1", type: "action", label: "Rotate to sales owner", actionType: "rotate_owner", actionSummary: "Sales round-robin", reached: 42, completed: 42 },
+      { id: "n2", type: "action", label: "Create follow-up task", actionType: "create_task", actionSummary: "Call within 1 business day", reached: 42, completed: 42 },
+      { id: "n3", type: "action", label: "Enroll in Outbound Sales Cadence", actionType: "enroll_sequence", actionSummary: "Outbound Sales Cadence", reached: 42, completed: 40 },
+      { id: "n4", type: "goal", label: "Goal: meeting booked", goalCondition: "meetingBooked = true", reached: 19 },
+    ],
+    runLog: [
+      { id: "l1", contactName: "Sunita Patil", at: "2026-07-06T14:30:00Z", nodeLabel: "Enrolled", outcome: "enrolled", detail: "Score crossed 80" },
+      { id: "l2", contactName: "Sunita Patil", at: "2026-07-06T14:30:01Z", nodeLabel: "Rotate to sales owner", outcome: "action" },
+    ],
+  },
+  {
+    id: "au3",
+    name: "Case resolved → NPS survey",
+    description: "After a support case is resolved, wait a day then send an NPS survey and route detractors to a rep.",
+    status: "paused",
+    trigger: "Case status = resolved",
+    category: "Retention",
+    owner: "Neha Reddy",
+    actions: 4,
+    enrolled: 118,
+    activeCount: 0,
+    completedCount: 118,
+    goalMet: 44,
+    lastRun: "2026-06-30T10:00:00Z",
+    createdAt: "2026-03-15T09:00:00Z",
+    updatedAt: "2026-06-30T09:00:00Z",
+    triggers: [{ id: "at3", type: "custom_event", eventName: "case_resolved" }],
+    settings: { ...AUTO_DEFAULT_SETTINGS },
+    nodes: [
+      { id: "n1", type: "delay", label: "Delay 1 day", delayMode: "duration", delayValue: 1, delayUnit: "days", reached: 118, completed: 116 },
+      { id: "n2", type: "send_email", label: "NPS survey email", templateId: "t4", subject: "How did we do?", reached: 116, completed: 116 },
+      { id: "n3", type: "delay", label: "Wait for response (max 5d)", delayMode: "until_condition", delayCondition: "survey_responded = true", delayTimeoutDays: 5, reached: 116, completed: 88 },
+      {
+        id: "n4", type: "branch", label: "Detractor?", branchKind: "if_else", reached: 88,
+        branches: [
+          { id: "n4-yes", label: "Yes (score ≤ 6)", condition: "npsScore <= 6", nodes: [
+            { id: "n5", type: "action", label: "Notify success team", actionType: "notify_team", actionSummary: "Alert CS pod" },
+          ] },
+          { id: "n4-no", label: "No", nodes: [
+            { id: "n6", type: "action", label: "Tag as promoter", actionType: "add_tag", actionSummary: "promoter" },
+          ] },
+        ],
+      },
+    ],
+    runLog: [
+      { id: "l1", contactName: "Meera Krishnan", at: "2026-06-30T10:00:00Z", nodeLabel: "NPS survey email", outcome: "email_sent" },
+    ],
+  },
+  {
+    id: "au4",
+    name: "90-day inactivity win-back",
+    description: "Re-engage contacts who have gone quiet for 90 days; exit on re-engagement.",
+    status: "draft",
+    trigger: "Segment joined — Dormant 90-day win-back",
+    category: "Retention",
+    owner: "Karthik N",
+    actions: 3,
+    enrolled: 0,
+    activeCount: 0,
+    completedCount: 0,
+    goalMet: 0,
+    createdAt: "2026-07-03T09:00:00Z",
+    updatedAt: "2026-07-04T09:00:00Z",
+    triggers: [{ id: "at4", type: "segment_joined", segmentId: "sg6" }],
+    settings: { ...AUTO_DEFAULT_SETTINGS, goalCondition: "daysSinceContact < 7" },
+    nodes: [
+      { id: "n1", type: "send_email", label: "We miss you", templateId: "t3", subject: "It's been a while" },
+      { id: "n2", type: "delay", label: "Delay 4 days", delayMode: "duration", delayValue: 4, delayUnit: "days" },
+      { id: "n3", type: "goal", label: "Goal: re-engaged", goalCondition: "daysSinceContact < 7" },
+    ],
+    runLog: [],
+  },
+  {
+    id: "au5",
+    name: "Diwali 2025 ops (Archived)",
+    description: "Last year's festive routing — retained for reference.",
+    status: "paused",
+    archived: true,
+    trigger: "Manual",
+    category: "Event",
+    owner: "Karthik N",
+    actions: 2,
+    enrolled: 3180,
+    activeCount: 0,
+    completedCount: 3180,
+    goalMet: 0,
+    createdAt: "2025-10-01T09:00:00Z",
+    updatedAt: "2025-11-20T09:00:00Z",
+    triggers: [{ id: "at5", type: "manual" }],
+    settings: { ...AUTO_DEFAULT_SETTINGS },
+    nodes: [
+      { id: "n1", type: "action", label: "Add tag festive-2025", actionType: "add_tag", actionSummary: "festive-2025" },
+      { id: "n2", type: "send_email", label: "Festive greeting", templateId: "t1", subject: "Happy Diwali" },
+    ],
+    runLog: [],
+  },
 ];
 
-export const AUTOMATION_TEMPLATES = [
-  { id: "at1", name: "Lead nurture", description: "Enroll new leads in welcome sequence after form submit", trigger: "Form submitted", actions: 2 },
-  { id: "at2", name: "Win-back", description: "Re-engage contacts inactive for 90 days", trigger: "Days since contact > 90", actions: 3 },
-  { id: "at3", name: "Event follow-up", description: "Send thank-you and resources after event attendance", trigger: "Tag added: event-attendee", actions: 4 },
+export const MOCK_AUTOMATION_RECIPES: AutomationRecipe[] = [
+  {
+    id: "rec-lead",
+    name: "New lead nurture",
+    description: "Form submit → tag, enroll in welcome sequence, and route hot leads to sales.",
+    category: "lead",
+    triggers: [{ id: "rt1", type: "form_submitted", formId: "f1" }],
+    settings: { reEnrollment: "never", quietHours: true, goalCondition: "lifecycleStage = mql" },
+    nodes: [
+      { id: "r1", type: "action", label: "Tag as new-lead", actionType: "add_tag", actionSummary: "new-lead" },
+      { id: "r2", type: "action", label: "Enroll in welcome sequence", actionType: "enroll_sequence", actionSummary: "New Lead Welcome" },
+      { id: "r3", type: "delay", label: "Delay 2 days", delayMode: "duration", delayValue: 2, delayUnit: "days" },
+      { id: "r4", type: "branch", label: "Engaged?", branchKind: "if_else", branches: [
+        { id: "r4-y", label: "Yes", condition: "opened_any_email = true", nodes: [
+          { id: "r5", type: "action", label: "Notify owner", actionType: "notify_team", actionSummary: "Owner alert" },
+        ] },
+        { id: "r4-n", label: "No", nodes: [] },
+      ] },
+    ],
+  },
+  {
+    id: "rec-winback",
+    name: "Dormant win-back",
+    description: "Re-engage contacts inactive for 90 days, exit when they re-engage.",
+    category: "retention",
+    triggers: [{ id: "rt2", type: "segment_joined", segmentId: "sg6" }],
+    settings: { reEnrollment: "cooldown", reEnrollCooldownDays: 90, quietHours: true, goalCondition: "daysSinceContact < 7" },
+    nodes: [
+      { id: "r1", type: "send_email", label: "We miss you", templateId: "t3", subject: "It's been a while" },
+      { id: "r2", type: "delay", label: "Delay 4 days", delayMode: "duration", delayValue: 4, delayUnit: "days" },
+      { id: "r3", type: "send_email", label: "Exclusive offer", templateId: "t3", subject: "A little something to return" },
+      { id: "r4", type: "goal", label: "Goal: re-engaged", goalCondition: "daysSinceContact < 7" },
+    ],
+  },
+  {
+    id: "rec-event",
+    name: "Event follow-up",
+    description: "After an attendee tag is added, thank them and route to resources.",
+    category: "event",
+    triggers: [{ id: "rt3", type: "tag_added", tag: "event-attendee" }],
+    settings: { reEnrollment: "always", quietHours: false },
+    nodes: [
+      { id: "r1", type: "send_email", label: "Thanks for attending", templateId: "t4", subject: "Thanks for joining" },
+      { id: "r2", type: "delay", label: "Delay 2 days", delayMode: "duration", delayValue: 2, delayUnit: "days" },
+      { id: "r3", type: "send_email", label: "Resource pack", templateId: "t1", subject: "Your resources" },
+    ],
+  },
+  {
+    id: "rec-routing",
+    name: "Hot-lead routing",
+    description: "When lead score crosses 80, assign an owner and create a call task.",
+    category: "sales",
+    triggers: [{ id: "rt4", type: "property_changed", property: "leadScore", operator: "greater_than", value: "80" }],
+    settings: { reEnrollment: "cooldown", reEnrollCooldownDays: 30, quietHours: true },
+    nodes: [
+      { id: "r1", type: "action", label: "Rotate to sales owner", actionType: "rotate_owner", actionSummary: "Sales round-robin" },
+      { id: "r2", type: "action", label: "Create call task", actionType: "create_task", actionSummary: "Call within 1 business day" },
+      { id: "r3", type: "action", label: "Enroll in sales cadence", actionType: "enroll_sequence", actionSummary: "Outbound Sales Cadence" },
+    ],
+  },
+  {
+    id: "rec-nps",
+    name: "Post-resolution NPS",
+    description: "After a case resolves, survey the contact and flag detractors.",
+    category: "ops",
+    triggers: [{ id: "rt5", type: "custom_event", eventName: "case_resolved" }],
+    settings: { reEnrollment: "always", quietHours: true },
+    nodes: [
+      { id: "r1", type: "delay", label: "Delay 1 day", delayMode: "duration", delayValue: 1, delayUnit: "days" },
+      { id: "r2", type: "send_email", label: "NPS survey", templateId: "t4", subject: "How did we do?" },
+      { id: "r3", type: "branch", label: "Detractor?", branchKind: "if_else", branches: [
+        { id: "r3-y", label: "Yes", condition: "npsScore <= 6", nodes: [
+          { id: "r4", type: "action", label: "Notify success team", actionType: "notify_team", actionSummary: "CS alert" },
+        ] },
+        { id: "r3-n", label: "No", nodes: [] },
+      ] },
+    ],
+  },
+  {
+    id: "rec-abandon",
+    name: "Cart abandonment",
+    description: "When a checkout is abandoned, remind after a delay and offer help.",
+    category: "retention",
+    triggers: [{ id: "rt6", type: "custom_event", eventName: "checkout_abandoned" }],
+    settings: { reEnrollment: "always", quietHours: true },
+    nodes: [
+      { id: "r1", type: "delay", label: "Delay 2 hours", delayMode: "duration", delayValue: 2, delayUnit: "hours" },
+      { id: "r2", type: "send_email", label: "You left something behind", templateId: "t3", subject: "Complete your order" },
+      { id: "r3", type: "delay", label: "Delay 1 day", delayMode: "duration", delayValue: 1, delayUnit: "days" },
+      { id: "r4", type: "send_whatsapp", label: "WhatsApp nudge", snippet: "Need help checking out?" },
+    ],
+  },
 ];
 
 export const MOCK_DELIVERABILITY: DeliverabilityHealth = {

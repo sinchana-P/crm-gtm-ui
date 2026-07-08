@@ -52,10 +52,10 @@ export function SequenceTriggerConfig({
   disabled?: boolean;
   onChange: (triggers: SequenceTrigger[]) => void;
 }) {
-  const segments = useSegmentStore((s) => s.segments.filter((x) => !x.archived));
-  const sequences = useSequenceStore((s) =>
-    s.sequences.filter((x) => !x.archived && x.id !== currentSequenceId)
-  );
+  const allSegments = useSegmentStore((s) => s.segments);
+  const allSequences = useSequenceStore((s) => s.sequences);
+  const segments = allSegments.filter((x) => !x.archived);
+  const sequences = allSequences.filter((x) => !x.archived && x.id !== currentSequenceId);
 
   const patch = (id: string, p: Partial<SequenceTrigger>) =>
     onChange(triggers.map((t) => (t.id === id ? { ...t, ...p } : t)));
@@ -185,12 +185,27 @@ function TriggerFields({
     () => segments.find((s) => s.id === trigger.segmentId),
     [segments, trigger.segmentId]
   );
+  const segmentItems = Object.fromEntries(
+    segments.map((s) => [s.id, `${s.name} (${s.memberCount.toLocaleString()})`])
+  );
+  const formItems = Object.fromEntries(MOCK_FORMS.map((f) => [f.id, f.name]));
+  const campaignItems = Object.fromEntries(
+    MOCK_CAMPAIGNS.filter((c) => !c.archived).map((c) => [c.id, c.name])
+  );
+  const sequenceItems = Object.fromEntries(sequences.map((s) => [s.id, s.name]));
+  const dateFieldItems = {
+    createdAt: "Created date",
+    lastActivity: "Last activity date",
+    renewalDate: "Renewal date (custom)",
+    birthday: "Birthday (custom)",
+  };
 
   switch (trigger.type) {
     case "segment_joined":
       return (
         <div className="mt-3 space-y-2">
           <Select
+            items={segmentItems}
             value={trigger.segmentId ?? ""}
             disabled={disabled}
             onValueChange={(v) => patch({ segmentId: v ?? "" })}
@@ -221,6 +236,7 @@ function TriggerFields({
       return (
         <div className="mt-3">
           <Select
+            items={formItems}
             value={trigger.formId ?? ""}
             disabled={disabled}
             onValueChange={(v) => patch({ formId: v ?? "" })}
@@ -319,6 +335,7 @@ function TriggerFields({
             </SelectContent>
           </Select>
           <Select
+            items={campaignItems}
             value={trigger.engagementRef ?? ""}
             disabled={disabled}
             onValueChange={(v) => patch({ engagementRef: v ?? "" })}
@@ -340,6 +357,7 @@ function TriggerFields({
       return (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Select
+            items={dateFieldItems}
             value={trigger.dateField ?? "createdAt"}
             disabled={disabled}
             onValueChange={(v) => patch({ dateField: v ?? "createdAt" })}
@@ -370,6 +388,7 @@ function TriggerFields({
       return (
         <div className="mt-3">
           <Select
+            items={sequenceItems}
             value={trigger.sourceSequenceId ?? ""}
             disabled={disabled}
             onValueChange={(v) => patch({ sourceSequenceId: v ?? "" })}

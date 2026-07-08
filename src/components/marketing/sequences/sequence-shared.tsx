@@ -25,6 +25,7 @@ import type {
   Sequence,
   SequenceActionType,
   SequenceExitReason,
+  SequenceSender,
   SequenceStep,
   SequenceStepType,
   SequenceTrigger,
@@ -216,3 +217,28 @@ export function StepTypeBadge({ type }: { type: SequenceStepType }) {
 export const ADD_STEP_ICON = Plus;
 export const SUPPRESS_ICON = ShieldOff;
 export const SPLIT_ICON = SplitSquareVertical;
+
+/** Sales cadences send from the rep's inbox; marketing nurtures from a verified address. */
+export function defaultSenderForType(type: Sequence["type"]): SequenceSender {
+  return type === "sales"
+    ? { mode: "rep_inbox" }
+    : {
+        mode: "marketing_address",
+        fromName: "Connect NX Marketing",
+        fromAddress: "marketing@connectnx.io",
+        replyTo: "marketing@connectnx.io",
+      };
+}
+
+export function senderSummary(sender?: SequenceSender): string {
+  if (!sender) return "Not set";
+  if (sender.mode === "rep_inbox") return "Contact owner's inbox (rep)";
+  return sender.fromAddress
+    ? `${sender.fromName ? `${sender.fromName} ` : ""}<${sender.fromAddress}>`
+    : "Marketing address (unset)";
+}
+
+export function senderShortLabel(sender?: SequenceSender): string {
+  if (!sender) return "—";
+  return sender.mode === "rep_inbox" ? "Rep inbox" : "Marketing";
+}

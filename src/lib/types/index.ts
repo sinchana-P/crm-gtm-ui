@@ -235,9 +235,20 @@ export interface Sequence {
   updatedAt?: string;
   activeCount?: number;
   exitedCount?: number;
+  sender?: SequenceSender;
   triggers?: SequenceTrigger[];
   exit?: SequenceExitConfig;
   flow?: SequenceStep[];
+}
+
+export type SequenceSenderMode = "rep_inbox" | "marketing_address";
+
+export interface SequenceSender {
+  mode: SequenceSenderMode;
+  /** Marketing mode only — the verified from-name/address and reply-to. */
+  fromName?: string;
+  fromAddress?: string;
+  replyTo?: string;
 }
 
 export type SequenceTriggerType =
@@ -396,6 +407,7 @@ export interface SequenceTemplate {
   type: "marketing" | "sales";
   category: "welcome" | "re-engage" | "event" | "feedback" | "onboarding" | "sales";
   channel: "email" | "whatsapp" | "multi";
+  sender: SequenceSender;
   triggers: SequenceTrigger[];
   exit: SequenceExitConfig;
   flow: SequenceStep[];
@@ -514,6 +526,140 @@ export interface Automation {
   actions: number;
   enrolled: number;
   lastRun?: string;
+  // — extended (visual workflow canvas) —
+  description?: string;
+  owner?: string;
+  category?: string;
+  archived?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  activeCount?: number;
+  completedCount?: number;
+  triggers?: AutomationTrigger[];
+  nodes?: AutomationNode[];
+  settings?: AutomationSettings;
+  runLog?: AutomationRunLogEntry[];
+  goalMet?: number;
+}
+
+export type AutomationTriggerType =
+  | "form_submitted"
+  | "segment_joined"
+  | "list_membership"
+  | "property_changed"
+  | "tag_added"
+  | "page_viewed"
+  | "email_engagement"
+  | "deal_stage"
+  | "date_based"
+  | "custom_event"
+  | "webhook"
+  | "manual";
+
+export interface AutomationTrigger {
+  id: string;
+  type: AutomationTriggerType;
+  segmentId?: string;
+  formId?: string;
+  listName?: string;
+  property?: string;
+  operator?: string;
+  value?: string;
+  tag?: string;
+  pageUrl?: string;
+  engagementEvent?: "opened" | "clicked" | "not_opened";
+  engagementRef?: string;
+  dealStage?: string;
+  dateField?: string;
+  dateOffsetDays?: number;
+  eventName?: string;
+}
+
+export type AutomationNodeType =
+  | "send_email"
+  | "send_whatsapp"
+  | "delay"
+  | "branch"
+  | "action"
+  | "goal"
+  | "end";
+
+export type AutomationActionType =
+  | "set_property"
+  | "add_tag"
+  | "remove_tag"
+  | "adjust_score"
+  | "set_lifecycle"
+  | "create_task"
+  | "create_deal"
+  | "rotate_owner"
+  | "notify_team"
+  | "enroll_sequence"
+  | "unenroll_sequence"
+  | "webhook";
+
+export interface AutomationBranchPath {
+  id: string;
+  label: string;
+  condition?: string;
+  percent?: number;
+  nodes: AutomationNode[];
+}
+
+export interface AutomationNode {
+  id: string;
+  type: AutomationNodeType;
+  label: string;
+  // communication
+  templateId?: string;
+  subject?: string;
+  snippet?: string;
+  // delay
+  delayMode?: "duration" | "until_date" | "until_condition";
+  delayValue?: number;
+  delayUnit?: "minutes" | "hours" | "days";
+  delayField?: string;
+  delayCondition?: string;
+  delayTimeoutDays?: number;
+  businessDaysOnly?: boolean;
+  // branch
+  branchKind?: "if_else" | "percentage";
+  branches?: AutomationBranchPath[];
+  // action
+  actionType?: AutomationActionType;
+  actionSummary?: string;
+  // goal
+  goalCondition?: string;
+  // per-node stats
+  reached?: number;
+  completed?: number;
+}
+
+export interface AutomationSettings {
+  reEnrollment: ReEnrollmentPolicy;
+  reEnrollCooldownDays?: number;
+  suppressionSegmentId?: string;
+  goalCondition?: string;
+  quietHours?: boolean;
+}
+
+export interface AutomationRunLogEntry {
+  id: string;
+  contactName: string;
+  at: string;
+  nodeLabel: string;
+  outcome: "enrolled" | "action" | "email_sent" | "branched" | "waiting" | "goal_met" | "completed" | "exited" | "error";
+  detail?: string;
+}
+
+export interface AutomationRecipe {
+  id: string;
+  name: string;
+  description: string;
+  category: "lead" | "sales" | "retention" | "ops" | "event";
+  triggers: AutomationTrigger[];
+  nodes: AutomationNode[];
+  settings: AutomationSettings;
 }
 
 export interface SuppressionEntry {

@@ -6,7 +6,10 @@ import {
   AlertTriangle,
   ArrowLeft,
   GitBranch,
+  Inbox,
+  Mail,
   Save,
+  Send,
   Target,
   Users,
   Zap,
@@ -15,6 +18,7 @@ import { toast } from "sonner";
 import type {
   Sequence,
   SequenceExitConfig,
+  SequenceSender,
   SequenceStep,
   SequenceStepType,
   SequenceTrigger,
@@ -34,7 +38,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { MOCK_SEQUENCE_TEMPLATES } from "@/lib/mock-data";
+import { MOCK_SENDER_ADDRESSES, MOCK_SEQUENCE_TEMPLATES } from "@/lib/mock-data";
 import {
   appendToContainer,
   insertAfter,
@@ -49,7 +53,12 @@ import {
   useSequenceStore,
 } from "@/lib/stores/sequence-store";
 import { useSegmentStore } from "@/lib/stores/segment-store";
-import { countSteps, flowChannel } from "@/components/marketing/sequences/sequence-shared";
+import {
+  countSteps,
+  defaultSenderForType,
+  flowChannel,
+  senderShortLabel,
+} from "@/components/marketing/sequences/sequence-shared";
 import { SequenceFlowView } from "@/components/marketing/sequences/sequence-flow-view";
 import { SequenceStepConfig } from "@/components/marketing/sequences/sequence-step-config";
 import { SequenceTriggerConfig } from "@/components/marketing/sequences/sequence-trigger-config";
@@ -86,6 +95,9 @@ export function SequenceBuilder({
   const [name, setName] = useState(existing?.name ?? template?.name ?? "");
   const [description, setDescription] = useState(existing?.description ?? template?.description ?? "");
   const [type, setType] = useState<Sequence["type"]>(existing?.type ?? template?.type ?? "marketing");
+  const [sender, setSender] = useState<SequenceSender>(
+    existing?.sender ?? template?.sender ?? defaultSenderForType(existing?.type ?? template?.type ?? "marketing")
+  );
   const [triggers, setTriggers] = useState<SequenceTrigger[]>(
     existing?.triggers ?? template?.triggers ?? []
   );
@@ -103,7 +115,19 @@ export function SequenceBuilder({
 
   const stepCount = countSteps(flow);
   const channel = flowChannel(flow);
-  const issues = validateFlow(flow);
+  const senderIssues =
+    sender.mode === "marketing_address" && !sender.fromAddress
+      ? ["Select a verified marketing from-address"]
+      : [];
+  const issues = [...validateFlow(flow), ...senderIssues];
+
+  function changeType(next: Sequence["type"]) {
+    setType(next);
+    // Keep the sender aligned with the type's default unless the user already
+    // customized a marketing from-address.
+    if (next === "sales") setSender(defaultSenderForType("sales"));
+    else if (sender.mode === "rep_inbox") setSender(defaultSenderForType("marketing"));
+  }
 
   const estAudience = useMemo(() => {
     let total = 0;
@@ -159,6 +183,7 @@ export function SequenceBuilder({
       description: description.trim() || undefined,
       type,
       channel,
+      sender,
       triggers,
       flow,
       exit,
@@ -299,7 +324,7 @@ export function SequenceBuilder({
                   </div>
                   <div className="grid gap-2">
                     <Label>Type</Label>
-                    <Select value={type} onValueChange={(v) => setType((v as Sequence["type"]) ?? "marketing")}>
+                    <Select value={type} onValueChange={(v) => changeType((v as Sequence["type"]) ?? "marketing")}>
                       <SelectTrigger className="w-full sm:w-60">
                         <SelectValue />
                       </SelectTrigger>
@@ -311,6 +336,8 @@ export function SequenceBuilder({
                   </div>
                 </CardContent>
               </Card>
+
+              <SendingIdentityCard type={type} sender={sender} setSender={setSender} />
 
               <Card className="shadow-none">
                 <CardHeader>
@@ -370,6 +397,9 @@ export function SequenceBuilder({
               </SummaryRow>
               <SummaryRow icon={Target} label="Channel">
                 <Badge variant="outline" className="capitalize">{channel}</Badge>
+              </SummaryRow>
+              <SummaryRow icon={sender.mode === "rep_inbox" ? Inbox : Send} label="Sends from">
+                <Badge variant="outline">{senderShortLabel(sender)}</Badge>
               </SummaryRow>
               <div className="border-t pt-3">
                 <p className="mb-1.5 text-xs font-medium text-muted-foreground uppercase">Exit rules</p>
@@ -431,6 +461,131 @@ function SummaryRow({
   );
 }
 
+function SendingIdentityCard({
+  type,
+  sender,
+  setSender,
+}: {
+  type: Sequence["type"];
+  sender: SequenceSender;
+  setSender: (s: SequenceSender) => void;
+}) {
+  const addressItems = Object.fromEntries(
+    MOCK_SENDER_ADDRESSES.map((a) => [a.address, `${a.name} <${a.address}>${a.verified ? "" : " — unverified"}`])
+  );
+  return (
+    <Card className="shadow-none">
+      <CardHeader>
+        <CardTitle className="text-base">Sending identity</CardTitle>
+        <p className="text-sm text-muted-foreground">Who these emails are sent from.</p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={() => setSender(defaultSenderForType("marketing"))}
+            className={cn(
+              "flex flex-1 items-start gap-3 rounded-lg border p-3 text-left transition-colors",
+              sender.mode === "marketing_address" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+            )}
+          >
+            <Send className={cn("mt-0.5 size-4", sender.mode === "marketing_address" ? "text-primary" : "text-muted-foreground")} />
+            <span>
+              <span className="block text-sm font-medium">Marketing address</span>
+              <span className="block text-xs text-muted-foreground">
+                Bulk send from a verified company address, with an unsubscribe footer.
+              </span>
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSender({ mode: "rep_inbox" })}
+            className={cn(
+              "flex flex-1 items-start gap-3 rounded-lg border p-3 text-left transition-colors",
+              sender.mode === "rep_inbox" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+            )}
+          >
+            <Inbox className={cn("mt-0.5 size-4", sender.mode === "rep_inbox" ? "text-primary" : "text-muted-foreground")} />
+            <span>
+              <span className="block text-sm font-medium">Rep&rsquo;s inbox</span>
+              <span className="block text-xs text-muted-foreground">
+                1:1 send from each contact&rsquo;s owner. Replies go to that rep.
+              </span>
+            </span>
+          </button>
+        </div>
+
+        {sender.mode === "marketing_address" ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-2 sm:col-span-2">
+              <Label>From address</Label>
+              <Select
+                items={addressItems}
+                value={sender.fromAddress ?? ""}
+                onValueChange={(v) => {
+                  const picked = MOCK_SENDER_ADDRESSES.find((a) => a.address === v);
+                  setSender({
+                    ...sender,
+                    fromAddress: v ?? "",
+                    fromName: picked?.name ?? sender.fromName,
+                  });
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a verified address" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MOCK_SENDER_ADDRESSES.map((a) => (
+                    <SelectItem key={a.address} value={a.address} disabled={!a.verified}>
+                      {a.name} &lt;{a.address}&gt;{a.verified ? "" : " — unverified"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="from-name">From name</Label>
+              <Input
+                id="from-name"
+                value={sender.fromName ?? ""}
+                onChange={(e) => setSender({ ...sender, fromName: e.target.value })}
+                placeholder="Connect NX"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="reply-to">Reply-to</Label>
+              <Input
+                id="reply-to"
+                value={sender.replyTo ?? ""}
+                onChange={(e) => setSender({ ...sender, replyTo: e.target.value })}
+                placeholder="marketing@connectnx.io"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+            <p className="flex items-center gap-2 font-medium">
+              <Mail className="size-4 text-muted-foreground" />
+              Sends from each contact&rsquo;s owner
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Every email goes out from the enrolled contact&rsquo;s owner&rsquo;s connected mailbox
+              and looks like a personal 1:1 email. Replies route back to that rep — keep
+              &ldquo;pause on reply&rdquo; on so the human takes over.
+            </p>
+          </div>
+        )}
+        {type === "marketing" && sender.mode === "rep_inbox" && (
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            Heads up: rep-inbox sending is unusual for a marketing nurture — it sends 1:1 from
+            owners rather than in bulk.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function SettingsPanel({
   exit,
   setExit,
@@ -483,6 +638,10 @@ function SettingsPanel({
             Contacts in this segment never enroll and are removed immediately if added.
           </p>
           <Select
+            items={{
+              none: "None",
+              ...Object.fromEntries(segments.filter((s) => !s.archived).map((s) => [s.id, s.name])),
+            }}
             value={exit.suppressionSegmentId ?? "none"}
             onValueChange={(v) => patch({ suppressionSegmentId: v === "none" ? undefined : (v ?? undefined) })}
           >

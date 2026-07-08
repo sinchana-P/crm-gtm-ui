@@ -66,6 +66,7 @@ import { SequenceFlowView } from "@/components/marketing/sequences/sequence-flow
 import {
   ChannelIcon,
   EXIT_REASON_LABELS,
+  senderSummary,
   TRIGGER_META,
   triggerSummary,
 } from "@/components/marketing/sequences/sequence-shared";
@@ -183,8 +184,9 @@ export function SequenceDetail({ id }: { id: string }) {
               <p className="max-w-3xl text-sm text-muted-foreground">{sequence.description}</p>
             )}
             <p className="text-xs text-muted-foreground">
-              Owner: {sequence.owner ?? "—"} · {sequence.steps} steps ·{" "}
-              {sequence.updatedAt ? `updated ${formatRelative(sequence.updatedAt)}` : ""}
+              Owner: {sequence.owner ?? "—"} · {sequence.steps} steps · Sends from{" "}
+              {sequence.sender?.mode === "rep_inbox" ? "rep inbox" : "marketing address"}
+              {sequence.updatedAt ? ` · updated ${formatRelative(sequence.updatedAt)}` : ""}
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -382,6 +384,25 @@ export function SequenceDetail({ id }: { id: string }) {
         </TabsContent>
 
         <TabsContent value="settings" className="mt-6 space-y-6">
+          <Card className="shadow-none">
+            <CardHeader>
+              <CardTitle className="text-base">Sending identity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-3 rounded-lg border p-3">
+                <div className="flex size-8 items-center justify-center rounded-lg bg-muted">
+                  <ChannelIcon channel="email" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">
+                    {sequence.sender?.mode === "rep_inbox" ? "Rep's inbox (1:1)" : "Marketing address (bulk)"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{senderSummary(sequence.sender)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="shadow-none">
             <CardHeader>
               <CardTitle className="text-base">Enrollment triggers</CardTitle>

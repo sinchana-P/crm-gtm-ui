@@ -39,9 +39,8 @@ export function SequenceStepConfig({
   onPatch: (patch: Partial<SequenceStep>) => void;
   onClose: () => void;
 }) {
-  const sequences = useSequenceStore((s) =>
-    s.sequences.filter((x) => !x.archived && x.id !== currentSequenceId)
-  );
+  const allSequences = useSequenceStore((s) => s.sequences);
+  const sequences = allSequences.filter((x) => !x.archived && x.id !== currentSequenceId);
   const open = !!step;
   const meta = step ? STEP_META[step.type] : null;
 
@@ -79,6 +78,7 @@ export function SequenceStepConfig({
                   <div className="grid gap-2">
                     <Label>Template</Label>
                     <Select
+                      items={Object.fromEntries(MOCK_EMAIL_TEMPLATES.map((t) => [t.id, t.name]))}
                       value={step.templateId ?? ""}
                       onValueChange={(v) => onPatch({ templateId: v ?? "" })}
                     >
