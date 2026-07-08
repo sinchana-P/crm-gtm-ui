@@ -6,9 +6,9 @@ export function CampaignStatusBadge({ status }: { status: Campaign["status"] }) 
   const variants: Record<Campaign["status"], string> = {
     draft: "bg-muted text-muted-foreground",
     scheduled: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
-    sending: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
-    sent: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+    running: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
     paused: "bg-orange-500/10 text-orange-700 dark:text-orange-400",
+    completed: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
   };
   return (
     <Badge variant="outline" className={cn("border-0 capitalize", variants[status])}>

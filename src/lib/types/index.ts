@@ -83,19 +83,137 @@ export interface ListRecord {
   updatedAt: string;
 }
 
+export type CampaignStatus =
+  | "draft"
+  | "scheduled"
+  | "running"
+  | "paused"
+  | "completed";
+
+export type CampaignType = "one-time" | "recurring";
+
+export type CampaignGoalMetric =
+  | "opens"
+  | "clicks"
+  | "form_submissions"
+  | "conversions";
+
+export interface CampaignGoal {
+  metric: CampaignGoalMetric;
+  target: number;
+  current: number;
+}
+
+export interface CampaignRecurrence {
+  frequency: "daily" | "weekly" | "monthly" | "custom";
+  /** Cron expression backing the schedule (shown for custom frequency). */
+  cron: string;
+  startDate: string;
+  endDate?: string;
+}
+
+export interface ConversionTarget {
+  id: string;
+  type: "form" | "landing_page";
+  name: string;
+  url?: string;
+  conversions: number;
+}
+
+export interface UtmParameters {
+  source: string;
+  medium: string;
+  campaign: string;
+  term?: string;
+  content?: string;
+}
+
+export interface AbTestVariant {
+  id: string;
+  label: string;
+  subject: string;
+  sent: number;
+  opened: number;
+  clicked: number;
+  winner?: boolean;
+}
+
+export interface AbTestConfig {
+  enabled: boolean;
+  winnerCriteria: "open_rate" | "click_rate";
+  /** Percentage of audience used for the test send. */
+  samplePercent: number;
+  variants: AbTestVariant[];
+}
+
 export interface Campaign {
   id: string;
   name: string;
-  status: "draft" | "scheduled" | "sending" | "sent" | "paused";
+  description?: string;
+  type: CampaignType;
+  status: CampaignStatus;
+  archived?: boolean;
   channel: "email" | "whatsapp";
+  segmentId?: string;
   segmentName: string;
+  templateId?: string;
+  templateName?: string;
+  owner: string;
+  goals: CampaignGoal[];
+  conversionTargets: ConversionTarget[];
+  utmEnabled: boolean;
+  utm?: UtmParameters;
+  abTest?: AbTestConfig;
+  recurrence?: CampaignRecurrence;
   scheduledAt?: string;
+  lastRunAt?: string;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
   sent: number;
   delivered: number;
   opened: number;
   clicked: number;
   bounced: number;
   unsubscribed: number;
+  converted: number;
+}
+
+export type RecipientEventType =
+  | "queued"
+  | "sent"
+  | "delivered"
+  | "opened"
+  | "clicked"
+  | "bounced"
+  | "unsubscribed"
+  | "converted";
+
+export interface RecipientTimelineEvent {
+  id: string;
+  type: RecipientEventType;
+  at: string;
+  detail?: string;
+}
+
+export interface CampaignRecipient {
+  id: string;
+  campaignId: string;
+  contactId?: string;
+  name: string;
+  email: string;
+  status: RecipientEventType;
+  lastEventAt: string;
+  events: RecipientTimelineEvent[];
+}
+
+export interface CampaignDailyStat {
+  campaignId: string;
+  date: string;
+  sent: number;
+  opened: number;
+  clicked: number;
+  converted: number;
 }
 
 export interface Sequence {
@@ -108,6 +226,179 @@ export interface Sequence {
   replied: number;
   steps: number;
   pauseOnReply: boolean;
+  // — extended (Module 3) —
+  description?: string;
+  owner?: string;
+  channel?: "email" | "whatsapp" | "multi";
+  archived?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  activeCount?: number;
+  exitedCount?: number;
+  triggers?: SequenceTrigger[];
+  exit?: SequenceExitConfig;
+  flow?: SequenceStep[];
+}
+
+export type SequenceTriggerType =
+  | "segment_joined"
+  | "form_submitted"
+  | "tag_added"
+  | "manual"
+  | "property_changed"
+  | "email_engagement"
+  | "date_based"
+  | "another_sequence"
+  | "webhook"
+  | "custom_event";
+
+export interface SequenceTrigger {
+  id: string;
+  type: SequenceTriggerType;
+  segmentId?: string;
+  formId?: string;
+  tag?: string;
+  property?: string;
+  operator?: string;
+  value?: string;
+  engagementEvent?: "opened" | "clicked" | "not_opened";
+  engagementRef?: string;
+  dateField?: string;
+  dateOffsetDays?: number;
+  sourceSequenceId?: string;
+  eventName?: string;
+}
+
+export type ReEnrollmentPolicy = "never" | "cooldown" | "always";
+
+export interface SequenceExitConfig {
+  pauseOnReply: boolean;
+  goalEnabled: boolean;
+  goalCondition?: string;
+  suppressionSegmentId?: string;
+  unenrollOnSegmentExit: boolean;
+  reEnrollment: ReEnrollmentPolicy;
+  reEnrollCooldownDays?: number;
+  oneActivePerContact: boolean;
+}
+
+export type WaitMode = "duration" | "until_date" | "until_condition";
+
+export type SequenceActionType =
+  | "create_task"
+  | "notify_owner"
+  | "adjust_score"
+  | "update_property"
+  | "add_tag"
+  | "remove_tag"
+  | "enroll_sequence"
+  | "unenroll_sequence"
+  | "webhook";
+
+export interface SequenceBranchPath {
+  id: string;
+  label: string;
+  /** Filter expression for the if/else "match" path. */
+  condition?: string;
+  /** Weight for a percentage split path. */
+  percent?: number;
+  steps: SequenceStep[];
+}
+
+export interface SequenceStepStats {
+  reached: number;
+  sent: number;
+  opened: number;
+  clicked: number;
+  continued: number;
+}
+
+export interface SequenceStep {
+  id: string;
+  type: SequenceStepType;
+  label: string;
+  /** Legacy one-line config summary (still rendered as a fallback). */
+  config?: string;
+  order?: number;
+  // email
+  templateId?: string;
+  subject?: string;
+  // whatsapp
+  snippet?: string;
+  // wait
+  waitMode?: WaitMode;
+  waitValue?: number;
+  waitUnit?: "minutes" | "hours" | "days";
+  waitDate?: string;
+  waitField?: string;
+  waitCondition?: string;
+  waitTimeoutDays?: number;
+  businessDaysOnly?: boolean;
+  // branch
+  branchKind?: "if_else" | "percentage";
+  branches?: SequenceBranchPath[];
+  // action
+  actionType?: SequenceActionType;
+  actionSummary?: string;
+  // goal
+  goalCondition?: string;
+  // per-step performance (email/whatsapp)
+  stats?: SequenceStepStats;
+}
+
+export type SequenceEnrollmentState = "active" | "completed" | "exited";
+
+export type SequenceExitReason =
+  | "replied"
+  | "goal_met"
+  | "manual"
+  | "suppressed"
+  | "criteria_no_longer_met"
+  | "bounced";
+
+export interface SequenceEnrollmentEvent {
+  id: string;
+  stepLabel: string;
+  at: string;
+  outcome:
+    | "enrolled"
+    | "sent"
+    | "delivered"
+    | "opened"
+    | "clicked"
+    | "waiting"
+    | "branched"
+    | "task_created"
+    | "completed"
+    | "exited";
+  detail?: string;
+}
+
+export interface SequenceEnrollment {
+  id: string;
+  sequenceId: string;
+  contactId?: string;
+  contactName: string;
+  email: string;
+  state: SequenceEnrollmentState;
+  currentStepLabel?: string;
+  exitReason?: SequenceExitReason;
+  source: SequenceTriggerType;
+  enrolledAt: string;
+  updatedAt: string;
+  events: SequenceEnrollmentEvent[];
+}
+
+export interface SequenceTemplate {
+  id: string;
+  name: string;
+  description: string;
+  type: "marketing" | "sales";
+  category: "welcome" | "re-engage" | "event" | "feedback" | "onboarding" | "sales";
+  channel: "email" | "whatsapp" | "multi";
+  triggers: SequenceTrigger[];
+  exit: SequenceExitConfig;
+  flow: SequenceStep[];
 }
 
 export interface CaseRecord {
@@ -153,15 +444,14 @@ export interface NavItem {
   children?: NavItem[];
 }
 
-export type SequenceStepType = "email" | "wait" | "task" | "whatsapp" | "branch";
-
-export interface SequenceStep {
-  id: string;
-  type: SequenceStepType;
-  label: string;
-  config: string;
-  order: number;
-}
+export type SequenceStepType =
+  | "email"
+  | "whatsapp"
+  | "wait"
+  | "branch"
+  | "action"
+  | "goal"
+  | "task";
 
 export interface SequencePack {
   id: string;
@@ -246,6 +536,89 @@ export interface SegmentCriterion {
   field: string;
   operator: string;
   value: string;
+}
+
+export type SegmentType = "dynamic" | "static";
+
+export type SegmentOrigin = "manual" | "ai_suggested" | "lookalike";
+
+export type SegmentFieldCategory = "crm" | "behavioral" | "custom";
+
+export interface SegmentCondition {
+  id: string;
+  field: string;
+  operator: string;
+  value: string;
+}
+
+export interface SegmentConditionGroup {
+  id: string;
+  /** How conditions inside this group combine. */
+  match: "all" | "any";
+  conditions: SegmentCondition[];
+}
+
+export interface SegmentDefinition {
+  /** How groups combine with each other. */
+  match: "all" | "any";
+  groups: SegmentConditionGroup[];
+}
+
+export interface SegmentRefreshEntry {
+  id: string;
+  at: string;
+  trigger: "scheduled" | "manual";
+  delta: number;
+  durationMs: number;
+}
+
+export interface SegmentRefreshConfig {
+  mode: "scheduled" | "manual";
+  frequency?: "hourly" | "daily" | "weekly";
+  lastRefreshedAt?: string;
+  nextRefreshAt?: string;
+  history: SegmentRefreshEntry[];
+}
+
+export interface SegmentUsageRef {
+  module: "campaign" | "sequence" | "automation";
+  refId: string;
+  name: string;
+  status: string;
+}
+
+export interface SegmentRecord {
+  id: string;
+  name: string;
+  description?: string;
+  type: SegmentType;
+  origin: SegmentOrigin;
+  archived?: boolean;
+  memberCount: number;
+  /** Net member change over the last 7 days. */
+  weeklyChange: number;
+  definition?: SegmentDefinition;
+  staticMemberIds?: string[];
+  owner: string;
+  createdAt: string;
+  updatedAt: string;
+  refresh: SegmentRefreshConfig;
+  usedIn: SegmentUsageRef[];
+}
+
+export interface SegmentSuggestion {
+  id: string;
+  name: string;
+  rationale: string;
+  predictedCount: number;
+  confidence: number;
+  definition: SegmentDefinition;
+}
+
+export interface SegmentGrowthPoint {
+  segmentId: string;
+  date: string;
+  count: number;
 }
 
 export interface CaseTemplate {
