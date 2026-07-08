@@ -10,17 +10,22 @@ import type {
 } from "@/lib/types";
 import { MOCK_CONTACTS } from "@/lib/mock-data";
 
-/** Nav items visible only in admin view */
+/**
+ * Nav items visible only in admin view.
+ * Marketing is role-split: reps see the execution tools they act on daily — Campaigns,
+ * Sequences, Segments, Templates, Forms, Inbox, AI Chatbot, WhatsApp, Campaign Calendar
+ * (each page still scopes its data via useViewScope). Org-level analytics/config stay
+ * admin-only: Marketing Home (org dashboard), Automations (workflow authoring),
+ * Deliverability (domain auth), and Unsubscribes (global suppression/compliance).
+ */
 export const ADMIN_ONLY_NAV_IDS = new Set([
   "duplicates",
   "import",
   "reports",
   "mkt-dashboard",
-  "campaigns",
-  "segments",
-  "calendar",
-  "deliverability",
   "automations",
+  "deliverability",
+  "unsubscribe",
   "case-templates",
   "esign-bulk",
   "esign-templates",
@@ -38,11 +43,9 @@ export const ADMIN_ONLY_PATHS = [
   "/duplicates",
   "/import",
   "/reports",
-  "/marketing/deliverability",
   "/marketing/automations",
-  "/marketing/campaigns",
-  "/marketing/segments",
-  "/marketing/calendar",
+  "/marketing/deliverability",
+  "/marketing/unsubscribe",
   "/cases/templates",
   "/esign/bulk",
   "/esign/templates",
