@@ -1,0 +1,203 @@
+import type {
+  Chatbot,
+  ChatConversation,
+  ChatIntentStat,
+  ChatVolumePoint,
+} from "@/lib/types";
+
+export const MOCK_CHATBOTS: Chatbot[] = [
+  {
+    id: "cb1",
+    name: "Website Assistant",
+    description: "Answers product questions and captures leads on connectnx.io.",
+    status: "active",
+    owner: "Priya Sharma",
+    createdAt: "2026-05-12T09:00:00Z",
+    updatedAt: "2026-07-06T09:00:00Z",
+    widget: {
+      botName: "Ava",
+      headerSubtitle: "Connect NX Assistant · replies instantly",
+      themeColor: "#2563eb",
+      launcher: "bottom-right",
+      avatarInitials: "A",
+      welcomeMessage: "Hi 👋 I'm Ava. Ask me anything about Connect NX, or I can connect you with the team.",
+      suggestedPrompts: ["What does Connect NX cost?", "Book a demo", "How does segmentation work?"],
+    },
+    sources: [
+      { id: "s1", type: "url", name: "connectnx.io/docs", detail: "142 pages crawled", status: "trained", chunks: 1420, updatedAt: "2026-07-05T09:00:00Z" },
+      { id: "s2", type: "document", name: "Product FAQ.pdf", detail: "38 pages", status: "trained", chunks: 210, updatedAt: "2026-07-02T09:00:00Z" },
+      { id: "s3", type: "faq", name: "Pricing FAQ", detail: "24 Q&A pairs", status: "trained", chunks: 24, updatedAt: "2026-07-01T09:00:00Z" },
+      { id: "s4", type: "url", name: "connectnx.io/security", detail: "queued for crawl", status: "training", chunks: 0, updatedAt: "2026-07-07T08:30:00Z" },
+      { id: "s5", type: "document", name: "Onboarding Guide.docx", detail: "upload failed — retry", status: "error", chunks: 0, updatedAt: "2026-07-07T08:00:00Z" },
+    ],
+    intents: [
+      { id: "i1", name: "Pricing", description: "Questions about plans and cost", examples: ["how much does it cost", "pricing plans", "is there a free trial"], action: "answer" },
+      { id: "i2", name: "Book a demo", description: "Wants a live demo", examples: ["book a demo", "talk to sales", "schedule a call"], action: "capture_lead" },
+      { id: "i3", name: "Technical support", description: "Existing customer needs help", examples: ["it's broken", "bug", "not working"], action: "handoff", target: "Support team" },
+      { id: "i4", name: "Integrations", description: "Asks about integrations", examples: ["do you integrate with", "api", "webhook"], action: "route_team", target: "Docs: Integrations" },
+    ],
+    leadFields: [
+      { id: "lf1", label: "Email", crmField: "email", required: true, askWhen: "after_intent" },
+      { id: "lf2", label: "Full name", crmField: "name", required: true, askWhen: "after_intent" },
+      { id: "lf3", label: "Company", crmField: "company", required: false, askWhen: "after_intent" },
+    ],
+    handoffRules: [
+      { id: "h1", trigger: "user_request", routeTo: "inbox" },
+      { id: "h2", trigger: "negative_sentiment", routeTo: "team", target: "Support team" },
+      { id: "h3", trigger: "high_intent", routeTo: "owner" },
+      { id: "h4", trigger: "off_hours", routeTo: "inbox" },
+    ],
+    crm: { createContact: true, updateContact: true, logTranscript: true, defaultOwner: "Priya Sharma", lifecycleStage: "lead" },
+    conversations: 1284,
+    resolvedByBot: 942,
+    leadsCaptured: 318,
+    handoffs: 214,
+    deflectionRate: 73.4,
+  },
+  {
+    id: "cb2",
+    name: "Pricing Page Bot",
+    description: "Focused bot on the pricing page that pushes demo bookings.",
+    status: "active",
+    owner: "Arjun Mehta",
+    createdAt: "2026-06-01T09:00:00Z",
+    updatedAt: "2026-07-04T09:00:00Z",
+    widget: {
+      botName: "Max",
+      headerSubtitle: "Sales · usually replies in a minute",
+      themeColor: "#16a34a",
+      launcher: "bottom-right",
+      avatarInitials: "M",
+      welcomeMessage: "Hey! Comparing plans? I can help you find the right fit or set up a quick demo.",
+      suggestedPrompts: ["Compare plans", "Book a demo", "Do you offer discounts?"],
+    },
+    sources: [
+      { id: "s1", type: "faq", name: "Pricing FAQ", detail: "24 Q&A pairs", status: "trained", chunks: 24, updatedAt: "2026-07-01T09:00:00Z" },
+      { id: "s2", type: "text", name: "Discount policy snippet", detail: "manual entry", status: "trained", chunks: 3, updatedAt: "2026-06-28T09:00:00Z" },
+    ],
+    intents: [
+      { id: "i1", name: "Book a demo", examples: ["book a demo", "talk to sales"], action: "capture_lead" },
+      { id: "i2", name: "Discounts", examples: ["discount", "coupon", "cheaper"], action: "answer" },
+    ],
+    leadFields: [
+      { id: "lf1", label: "Work email", crmField: "email", required: true, askWhen: "start" },
+      { id: "lf2", label: "Company size", crmField: "companySize", required: false, askWhen: "after_intent" },
+    ],
+    handoffRules: [
+      { id: "h1", trigger: "high_intent", routeTo: "owner" },
+      { id: "h2", trigger: "user_request", routeTo: "inbox" },
+    ],
+    crm: { createContact: true, updateContact: true, logTranscript: true, defaultOwner: "Arjun Mehta", lifecycleStage: "mql" },
+    conversations: 412,
+    resolvedByBot: 208,
+    leadsCaptured: 156,
+    handoffs: 96,
+    deflectionRate: 50.5,
+  },
+  {
+    id: "cb3",
+    name: "Support Deflector (Draft)",
+    description: "In-app help bot to deflect common support questions.",
+    status: "draft",
+    owner: "Neha Reddy",
+    createdAt: "2026-07-03T09:00:00Z",
+    updatedAt: "2026-07-05T09:00:00Z",
+    widget: {
+      botName: "Nova",
+      headerSubtitle: "Support",
+      themeColor: "#7c3aed",
+      launcher: "bottom-left",
+      avatarInitials: "N",
+      welcomeMessage: "Hi! I can help with setup, billing, and troubleshooting.",
+      suggestedPrompts: ["Reset my password", "Billing question", "Talk to support"],
+    },
+    sources: [
+      { id: "s1", type: "url", name: "help.connectnx.io", detail: "not yet crawled", status: "queued", chunks: 0, updatedAt: "2026-07-05T09:00:00Z" },
+    ],
+    intents: [],
+    leadFields: [{ id: "lf1", label: "Email", crmField: "email", required: true, askWhen: "before_handoff" }],
+    handoffRules: [{ id: "h1", trigger: "no_answer", routeTo: "team", target: "Support team" }],
+    crm: { createContact: false, updateContact: true, logTranscript: true },
+    conversations: 0,
+    resolvedByBot: 0,
+    leadsCaptured: 0,
+    handoffs: 0,
+    deflectionRate: 0,
+  },
+];
+
+export const MOCK_CHAT_CONVERSATIONS: ChatConversation[] = [
+  {
+    id: "cc1", chatbotId: "cb1", visitorName: "Ananya Iyer", visitorEmail: "ananya.iyer@techcorp.in", contactId: "c1",
+    status: "resolved", intent: "Pricing", leadCaptured: true, sentiment: "positive", page: "/pricing",
+    startedAt: "2026-07-07T10:02:00Z", lastAt: "2026-07-07T10:09:00Z",
+    messages: [
+      { id: "m1", role: "bot", text: "Hi 👋 I'm Ava. Ask me anything about Connect NX.", at: "2026-07-07T10:02:00Z" },
+      { id: "m2", role: "visitor", text: "How much does the Pro plan cost?", at: "2026-07-07T10:02:40Z" },
+      { id: "m3", role: "bot", text: "The Pro plan is ₹4,999/month billed annually, and includes segmentation, sequences, and automations. Want me to set up a demo?", at: "2026-07-07T10:02:52Z" },
+      { id: "m4", role: "visitor", text: "Yes please", at: "2026-07-07T10:03:20Z" },
+      { id: "m5", role: "bot", text: "Great! What's the best email to send the invite to?", at: "2026-07-07T10:03:25Z" },
+      { id: "m6", role: "visitor", text: "ananya.iyer@techcorp.in", at: "2026-07-07T10:03:58Z" },
+      { id: "m7", role: "system", text: "Lead captured · contact updated in CRM", at: "2026-07-07T10:04:00Z" },
+      { id: "m8", role: "bot", text: "Perfect — you'll get a calendar link shortly. Anything else?", at: "2026-07-07T10:04:05Z" },
+    ],
+  },
+  {
+    id: "cc2", chatbotId: "cb1", visitorName: "Rahul Verma", visitorEmail: "rahul.verma@retailmax.in", contactId: "c2",
+    status: "handed_off", intent: "Technical support", leadCaptured: false, sentiment: "negative", assignedTo: "Support team", page: "/app",
+    startedAt: "2026-07-07T09:30:00Z", lastAt: "2026-07-07T09:36:00Z",
+    messages: [
+      { id: "m1", role: "bot", text: "Hi 👋 I'm Ava. How can I help?", at: "2026-07-07T09:30:00Z" },
+      { id: "m2", role: "visitor", text: "My imports keep failing and it's really frustrating", at: "2026-07-07T09:30:40Z" },
+      { id: "m3", role: "bot", text: "I'm sorry to hear that. Let me get a specialist to help you right away.", at: "2026-07-07T09:30:50Z" },
+      { id: "m4", role: "system", text: "Negative sentiment detected → handed off to Support team", at: "2026-07-07T09:31:00Z" },
+      { id: "m5", role: "agent", text: "Hi Rahul, this is Neha from support. Can you share the file you're importing?", at: "2026-07-07T09:33:00Z" },
+    ],
+  },
+  {
+    id: "cc3", chatbotId: "cb2", visitorName: "Visitor (anon)", contactId: undefined,
+    status: "bot", intent: "Discounts", leadCaptured: false, sentiment: "neutral", page: "/pricing",
+    startedAt: "2026-07-07T11:00:00Z", lastAt: "2026-07-07T11:01:30Z",
+    messages: [
+      { id: "m1", role: "bot", text: "Hey! Comparing plans? I can help.", at: "2026-07-07T11:00:00Z" },
+      { id: "m2", role: "visitor", text: "Do you offer startup discounts?", at: "2026-07-07T11:00:45Z" },
+      { id: "m3", role: "bot", text: "Yes — startups under 2 years old get 30% off the first year. Want me to check eligibility?", at: "2026-07-07T11:01:00Z" },
+    ],
+  },
+  {
+    id: "cc4", chatbotId: "cb1", visitorName: "Vikram Singh", visitorEmail: "vikram.singh@startup.io", contactId: "c4",
+    status: "resolved", intent: "Integrations", leadCaptured: false, sentiment: "positive", page: "/integrations",
+    startedAt: "2026-07-06T15:20:00Z", lastAt: "2026-07-06T15:24:00Z",
+    messages: [
+      { id: "m1", role: "bot", text: "Hi 👋 I'm Ava.", at: "2026-07-06T15:20:00Z" },
+      { id: "m2", role: "visitor", text: "Do you integrate with Slack?", at: "2026-07-06T15:20:30Z" },
+      { id: "m3", role: "bot", text: "Yes! Connect NX has a native Slack integration for notifications and handoffs. Here's the setup guide: connectnx.io/docs/slack", at: "2026-07-06T15:20:45Z" },
+      { id: "m4", role: "visitor", text: "Perfect, thanks!", at: "2026-07-06T15:24:00Z" },
+    ],
+  },
+  {
+    id: "cc5", chatbotId: "cb1", visitorName: "Visitor (anon)", status: "abandoned", intent: undefined, leadCaptured: false, sentiment: "neutral", page: "/",
+    startedAt: "2026-07-06T12:00:00Z", lastAt: "2026-07-06T12:00:30Z",
+    messages: [
+      { id: "m1", role: "bot", text: "Hi 👋 I'm Ava. Ask me anything.", at: "2026-07-06T12:00:00Z" },
+      { id: "m2", role: "visitor", text: "hello", at: "2026-07-06T12:00:30Z" },
+    ],
+  },
+];
+
+export const MOCK_CHAT_INTENT_STATS: ChatIntentStat[] = [
+  { intent: "Pricing", count: 402 },
+  { intent: "Book a demo", count: 318 },
+  { intent: "Integrations", count: 221 },
+  { intent: "Technical support", count: 188 },
+  { intent: "Discounts", count: 96 },
+  { intent: "No intent matched", count: 59 },
+];
+
+export const MOCK_CHAT_VOLUME: ChatVolumePoint[] = [
+  { date: "2026-06-08", conversations: 148, resolved: 104 },
+  { date: "2026-06-15", conversations: 176, resolved: 129 },
+  { date: "2026-06-22", conversations: 192, resolved: 141 },
+  { date: "2026-06-29", conversations: 214, resolved: 158 },
+  { date: "2026-07-06", conversations: 238, resolved: 181 },
+];

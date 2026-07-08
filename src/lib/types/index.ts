@@ -486,6 +486,56 @@ export interface MarketingForm {
   updatedAt: string;
 }
 
+export type EmailBlockType =
+  | "heading"
+  | "text"
+  | "image"
+  | "button"
+  | "divider"
+  | "spacer"
+  | "social"
+  | "columns"
+  | "html"
+  | "dynamic";
+
+export interface EmailDynamicVariant {
+  id: string;
+  label: string;
+  condition?: string;
+  text: string;
+}
+
+export interface EmailBlock {
+  id: string;
+  type: EmailBlockType;
+  text?: string;
+  level?: 1 | 2 | 3;
+  align?: "left" | "center" | "right";
+  url?: string;
+  src?: string;
+  alt?: string;
+  height?: number;
+  socials?: string[];
+  html?: string;
+  /** Two/three column layout — one entry of text per column. */
+  colText?: string[];
+  /** Phase-2 dynamic content — first variant is the default/fallback. */
+  dynamicVariants?: EmailDynamicVariant[];
+  bgColor?: string;
+  textColor?: string;
+  buttonColor?: string;
+}
+
+export type EmailTemplateStatus = "draft" | "published" | "archived";
+
+export type EmailTemplateType =
+  | "newsletter"
+  | "promotional"
+  | "transactional"
+  | "announcement"
+  | "welcome"
+  | "event";
+
 export interface EmailTemplate {
   id: string;
   name: string;
@@ -495,6 +545,53 @@ export interface EmailTemplate {
   openRate: number;
   clickRate: number;
   updatedAt: string;
+  // — extended (Email Marketing module) —
+  description?: string;
+  status?: EmailTemplateStatus;
+  type?: EmailTemplateType;
+  preheader?: string;
+  fromName?: string;
+  owner?: string;
+  createdAt?: string;
+  accent?: string;
+  blocks?: EmailBlock[];
+  htmlMode?: boolean;
+  rawHtml?: string;
+  trackOpens?: boolean;
+  trackClicks?: boolean;
+  predictiveSendTime?: boolean;
+  deliveredRate?: number;
+  bounceRate?: number;
+  unsubRate?: number;
+}
+
+export interface EmailStarter {
+  id: string;
+  name: string;
+  description: string;
+  type: EmailTemplateType;
+  accent: string;
+  subject: string;
+  blocks: EmailBlock[];
+}
+
+export interface PersonalizationToken {
+  token: string;
+  label: string;
+  sample: string;
+}
+
+export interface UnsubscribeTopic {
+  id: string;
+  label: string;
+  description: string;
+  subscribers: number;
+  required?: boolean;
+}
+
+export interface UnsubscribeReasonStat {
+  reason: string;
+  count: number;
 }
 
 export interface InboxMessage {
@@ -989,4 +1086,141 @@ export interface RepPeriodSummary {
   stats: RepStat[];
   actions: RepActionItem[];
   goals?: { label: string; current: number; target: number }[];
+}
+
+// ── AI Chatbot ──────────────────────────────────────────────────────────────
+
+export type ChatbotStatus = "active" | "paused" | "draft";
+
+export type ChatbotLauncherPosition = "bottom-right" | "bottom-left";
+
+export type ChatbotSourceType = "document" | "url" | "faq" | "text";
+export type ChatbotSourceStatus = "trained" | "training" | "queued" | "error";
+
+export interface ChatbotKnowledgeSource {
+  id: string;
+  type: ChatbotSourceType;
+  name: string;
+  detail?: string;
+  status: ChatbotSourceStatus;
+  chunks?: number;
+  updatedAt: string;
+}
+
+export type ChatIntentAction = "answer" | "route_team" | "capture_lead" | "handoff" | "link";
+
+export interface ChatbotIntent {
+  id: string;
+  name: string;
+  description?: string;
+  examples: string[];
+  action: ChatIntentAction;
+  target?: string;
+}
+
+export type ChatLeadAskWhen = "start" | "after_intent" | "before_handoff";
+
+export interface ChatLeadField {
+  id: string;
+  label: string;
+  crmField: string;
+  required: boolean;
+  askWhen: ChatLeadAskWhen;
+}
+
+export type ChatHandoffTrigger =
+  | "user_request"
+  | "negative_sentiment"
+  | "no_answer"
+  | "high_intent"
+  | "keyword"
+  | "off_hours";
+
+export interface ChatHandoffRule {
+  id: string;
+  trigger: ChatHandoffTrigger;
+  keyword?: string;
+  routeTo: "inbox" | "owner" | "team";
+  target?: string;
+}
+
+export interface ChatbotWidget {
+  botName: string;
+  headerSubtitle?: string;
+  themeColor: string;
+  launcher: ChatbotLauncherPosition;
+  avatarInitials?: string;
+  welcomeMessage: string;
+  suggestedPrompts: string[];
+}
+
+export interface ChatbotCrmSync {
+  createContact: boolean;
+  updateContact: boolean;
+  logTranscript: boolean;
+  defaultOwner?: string;
+  lifecycleStage?: string;
+}
+
+export interface Chatbot {
+  id: string;
+  name: string;
+  description?: string;
+  status: ChatbotStatus;
+  archived?: boolean;
+  owner?: string;
+  createdAt: string;
+  updatedAt: string;
+  widget: ChatbotWidget;
+  sources: ChatbotKnowledgeSource[];
+  intents: ChatbotIntent[];
+  leadFields: ChatLeadField[];
+  handoffRules: ChatHandoffRule[];
+  crm: ChatbotCrmSync;
+  // rolling stats
+  conversations: number;
+  resolvedByBot: number;
+  leadsCaptured: number;
+  handoffs: number;
+  deflectionRate: number;
+}
+
+export type ChatMessageRole = "bot" | "visitor" | "agent" | "system";
+
+export interface ChatMessage {
+  id: string;
+  role: ChatMessageRole;
+  text: string;
+  at: string;
+}
+
+export type ChatConversationStatus = "bot" | "handed_off" | "resolved" | "abandoned";
+export type ChatSentiment = "positive" | "neutral" | "negative";
+
+export interface ChatConversation {
+  id: string;
+  chatbotId: string;
+  visitorName: string;
+  visitorEmail?: string;
+  contactId?: string;
+  status: ChatConversationStatus;
+  intent?: string;
+  leadCaptured: boolean;
+  sentiment?: ChatSentiment;
+  assignedTo?: string;
+  page?: string;
+  startedAt: string;
+  lastAt: string;
+  messages: ChatMessage[];
+}
+
+export interface ChatIntentStat {
+  intent: string;
+  count: number;
+}
+
+export interface ChatVolumePoint {
+  date: string;
+  conversations: number;
+  resolved: number;
 }
