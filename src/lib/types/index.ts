@@ -594,6 +594,14 @@ export interface UnsubscribeReasonStat {
   count: number;
 }
 
+export type InboxCategory =
+  | "lead"
+  | "complaint"
+  | "request"
+  | "question"
+  | "billing"
+  | "support";
+
 export interface InboxMessage {
   id: string;
   contactId?: string;
@@ -602,6 +610,9 @@ export interface InboxMessage {
   channel: "email" | "whatsapp";
   subject: string;
   preview: string;
+  /** Full inbound message body; falls back to preview when absent. */
+  body?: string;
+  category?: InboxCategory;
   assignee?: string;
   unread: boolean;
   receivedAt: string;
@@ -1324,4 +1335,47 @@ export interface AiAgentRun {
   goal: string;
   status: "planning" | "awaiting_approval" | "running" | "completed";
   steps: AiAgentStep[];
+}
+
+/** A one-click starting point that prefills the composer/compose brief. */
+export interface AiEmailStarter {
+  id: string;
+  label: string;
+  /** lucide icon name, mapped in the UI. */
+  icon: string;
+  description: string;
+  goal: string;
+  tone: AiTone;
+  cta: string;
+}
+
+/** Brief for composing a fresh, one-off email to a specific recipient. */
+export interface AiComposeContext {
+  goal: string;
+  tone: AiTone;
+  keyPoints: string;
+  recipientName?: string;
+}
+
+export type AiDraftStatus = "idle" | "generating" | "ready" | "error";
+
+export type AiDraftSource = "studio" | "compose" | "inbox" | "editor";
+
+export type AiSavedDraftStatus = "draft" | "scheduled" | "sent";
+
+/** A generated draft persisted to the draft-history store. */
+export interface AiSavedDraft {
+  id: string;
+  subject: string;
+  /** Assembled plain-text body. */
+  body: string;
+  goal: string;
+  tone: AiTone;
+  audience: string;
+  recipientName?: string;
+  recipientEmail?: string;
+  source: AiDraftSource;
+  status: AiSavedDraftStatus;
+  createdAt: string;
+  updatedAt: string;
 }

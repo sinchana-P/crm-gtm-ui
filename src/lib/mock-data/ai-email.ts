@@ -1,4 +1,4 @@
-import type { AiAgentRun, AiNextAction, BrandVoice } from "@/lib/types";
+import type { AiAgentRun, AiNextAction, AiSavedDraft, BrandVoice } from "@/lib/types";
 
 export const DEFAULT_BRAND_VOICE: BrandVoice = {
   attributes: ["Warm", "Confident", "Jargon-free"],
@@ -56,6 +56,49 @@ export const MOCK_AI_NEXT_ACTIONS: AiNextAction[] = [
     rationale: "That segment converts 2.3× better than average and is growing +26/week — a lookalike would expand reach.",
     impact: "~500 net-new prospects",
     confidence: 69,
+  },
+];
+
+export const MOCK_AI_DRAFTS: AiSavedDraft[] = [
+  {
+    id: "draft-1",
+    subject: "Ananya, your onboarding call is one click away",
+    body: "Hi Ananya,\n\nThanks again for the great demo conversation. To get your team live quickly, I'd love to set up a short onboarding call.\n\nDoes Tuesday or Wednesday next week work? I'll tailor it to your rollout plan.\n\nWarmly,\nPriya",
+    goal: "Follow up after a product demo and propose clear next steps",
+    tone: "professional",
+    audience: "Procurement lead evaluating the platform",
+    recipientName: "Ananya Iyer",
+    recipientEmail: "ananya.iyer@techcorp.in",
+    source: "compose",
+    status: "sent",
+    createdAt: "2026-07-07T09:24:00Z",
+    updatedAt: "2026-07-07T09:31:00Z",
+  },
+  {
+    id: "draft-2",
+    subject: "A little something for you 🎁",
+    body: "Hi Rahul,\n\nWe've been thinking about how to help RetailHub scale for the festive season. For a limited time, bulk orders qualify for 15% off.\n\nWant me to put together a quick quote for your volume?\n\nCheers,\nPriya",
+    goal: "Share a limited-time discount and create urgency to act now",
+    tone: "persuasive",
+    audience: "Existing customer, price-sensitive",
+    recipientName: "Rahul Verma",
+    recipientEmail: "rahul.v@retailhub.com",
+    source: "compose",
+    status: "scheduled",
+    createdAt: "2026-07-08T14:02:00Z",
+    updatedAt: "2026-07-08T14:10:00Z",
+  },
+  {
+    id: "draft-3",
+    subject: "We saved you a seat at the June product webinar",
+    body: "Hi {{firstName}},\n\nWe're hosting a live walkthrough of everything new this quarter — and we'd love for you to join.\n\nIt's 30 minutes, no fluff, with time for your questions.\n\nSave my seat →\n\nWarmly,\nThe Connect NX team",
+    goal: "Invite the contact to an upcoming webinar and get them to register",
+    tone: "friendly",
+    audience: "Engaged newsletter subscribers",
+    source: "studio",
+    status: "draft",
+    createdAt: "2026-07-09T08:15:00Z",
+    updatedAt: "2026-07-09T08:15:00Z",
   },
 ];
 

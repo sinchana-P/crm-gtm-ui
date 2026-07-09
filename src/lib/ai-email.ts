@@ -1,6 +1,8 @@
 import type {
+  AiComposeContext,
   AiDraftContext,
   AiDraftSection,
+  AiEmailStarter,
   AiRewriteAction,
   AiSubjectOption,
   AiTone,
@@ -224,3 +226,96 @@ export const REPLY_REFINE_ACTIONS: { value: AiRewriteAction; label: string }[] =
   { value: "formalize", label: "More formal" },
   { value: "casual", label: "Friendlier" },
 ];
+
+/**
+ * One-click starting points. Selecting one prefills the brief so a user can
+ * generate a solid first draft without staring at a blank form — the pattern
+ * HubSpot's content assistant and Zoho Zia both lead with.
+ */
+export const AI_EMAIL_STARTERS: AiEmailStarter[] = [
+  {
+    id: "product-announcement",
+    label: "Product announcement",
+    icon: "Megaphone",
+    description: "Introduce a new feature and drive adoption",
+    goal: "Announce a new product feature and get people to try it",
+    tone: "friendly",
+    cta: "See what's new",
+  },
+  {
+    id: "follow-up-demo",
+    label: "Follow-up after demo",
+    icon: "CalendarCheck",
+    description: "Recap the demo and move the deal forward",
+    goal: "Follow up after a product demo and propose clear next steps",
+    tone: "professional",
+    cta: "Book next steps",
+  },
+  {
+    id: "re-engagement",
+    label: "Re-engage a cold lead",
+    icon: "HandHeart",
+    description: "Win back a contact who's gone quiet",
+    goal: "Re-engage a contact who hasn't replied in a while",
+    tone: "empathetic",
+    cta: "Let's reconnect",
+  },
+  {
+    id: "discount-offer",
+    label: "Discount offer",
+    icon: "Tag",
+    description: "Share a limited-time offer with urgency",
+    goal: "Share a limited-time discount and create urgency to act now",
+    tone: "persuasive",
+    cta: "Claim the offer",
+  },
+  {
+    id: "event-invite",
+    label: "Event invite",
+    icon: "Ticket",
+    description: "Invite to a webinar or event",
+    goal: "Invite the contact to an upcoming webinar and get them to register",
+    tone: "friendly",
+    cta: "Save my seat",
+  },
+  {
+    id: "welcome",
+    label: "Welcome / onboarding",
+    icon: "Sparkles",
+    description: "Greet a new signup and help them start",
+    goal: "Welcome a new signup and help them get set up quickly",
+    tone: "friendly",
+    cta: "Get started",
+  },
+];
+
+/**
+ * Compose a fresh, one-off email to a known recipient. Built on the same
+ * deterministic subject/section generators as the studio composer, then
+ * flattened to a subject + plain-text body for a compose window.
+ */
+export function composeDraft(
+  ctx: AiComposeContext,
+  variant: number
+): { subject: string; preheader: string; body: string } {
+  const base: AiDraftContext = {
+    goal: ctx.goal,
+    audience: ctx.recipientName ?? "",
+    tone: ctx.tone,
+    keyMessage: ctx.keyPoints,
+    length: "medium",
+    cta: "",
+    applyBrandVoice: true,
+  };
+  const subjects = generateSubjects(base);
+  const subject = subjects[variant % subjects.length] ?? subjects[0];
+  const firstName = ctx.recipientName?.trim().split(/\s+/)[0];
+  const sections = generateSections(base).map((s) =>
+    s.kind === "greeting" && firstName ? { ...s, text: `Hi ${firstName},` } : s
+  );
+  return {
+    subject: subject?.text ?? cap(ctx.goal || "Quick note"),
+    preheader: subject?.preheader ?? "",
+    body: assembleDraft(sections),
+  };
+}

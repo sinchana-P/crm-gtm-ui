@@ -40,6 +40,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  AI_EMAIL_STARTERS,
   AI_TONES,
   REWRITE_ACTIONS,
   assembleDraft,
@@ -48,6 +49,7 @@ import {
   regenerateSection,
   rewriteText,
 } from "@/lib/ai-email";
+import { createDraftId, useAiDraftStore } from "@/lib/stores/ai-draft-store";
 import { useBrandVoiceStore } from "@/lib/stores/brand-voice-store";
 import { createBlockId, createTemplateId, useEmailTemplateStore } from "@/lib/stores/email-template-store";
 import { cn } from "@/lib/utils";
@@ -74,6 +76,7 @@ export function AiComposer({
   const router = useRouter();
   const brand = useBrandVoiceStore((s) => s.voice);
   const addTemplate = useEmailTemplateStore((s) => s.addTemplate);
+  const addDraft = useAiDraftStore((s) => s.addDraft);
 
   const [ctx, setCtx] = useState<AiDraftContext>(DEFAULT_CONTEXT);
   const [generating, setGenerating] = useState(false);
@@ -94,14 +97,34 @@ export function AiComposer({
     setGenerating(true);
     const t = setTimeout(() => {
       const subs = generateSubjects(ctx);
+      const secs = generateSections(ctx);
       setSubjects(subs);
       setSelectedSubject(subs[0]?.id ?? "");
-      setSections(generateSections(ctx));
+      setSections(secs);
       setUndo({});
       variantRef.current = {};
       setGenerating(false);
+      const now = new Date().toISOString();
+      addDraft({
+        id: createDraftId(),
+        subject: subs[0]?.text ?? (ctx.goal || ctx.keyMessage).slice(0, 60),
+        body: assembleDraft(secs),
+        goal: ctx.goal || ctx.keyMessage,
+        tone: ctx.tone,
+        audience: ctx.audience,
+        source: "studio",
+        status: "draft",
+        createdAt: now,
+        updatedAt: now,
+      });
     }, 750);
     timers.current.push(t);
+  }
+
+  function pickStarter(id: string) {
+    const s = AI_EMAIL_STARTERS.find((x) => x.id === id);
+    if (!s) return;
+    patch({ goal: s.goal, tone: s.tone, cta: s.cta });
   }
 
   function regenSubjects() {
@@ -192,6 +215,22 @@ export function AiComposer({
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
+          <div className="grid gap-1.5">
+            <Label className="text-xs text-muted-foreground">Start from a template</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {AI_EMAIL_STARTERS.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => pickStarter(s.id)}
+                  title={s.description}
+                  className="rounded-full border bg-background px-2.5 py-1 text-xs transition-colors hover:border-violet-500/50 hover:bg-violet-500/5"
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="grid gap-2">
             <Label>Goal / objective</Label>
             <Input value={ctx.goal} onChange={(e) => patch({ goal: e.target.value })} placeholder="e.g. Get trial users to book an onboarding call" />
