@@ -263,7 +263,7 @@ export function AiComposeDrawer({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-4xl">
+      <SheetContent className="flex flex-col gap-0 p-0 data-[side=right]:w-full data-[side=right]:sm:w-[45vw] data-[side=right]:sm:max-w-none data-[side=right]:sm:min-w-[30rem]">
         <SheetHeader className="border-b">
           <SheetTitle className="flex items-center gap-2">
             <Sparkles className="size-4 text-violet-500" /> Compose email

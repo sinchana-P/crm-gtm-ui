@@ -1337,6 +1337,42 @@ export interface AiAgentRun {
   steps: AiAgentStep[];
 }
 
+// ── AI Entity Creation (guided, questions asked before create) ───────────────
+
+export type EntityType = "lead" | "contact" | "customer";
+
+/** A working record the AI assembles and the user reviews before creating. */
+export interface AiEntityDraft {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  company: string;
+  title: string;
+  owner: string;
+  source: string;
+  lifecycleStage: LifecycleStage;
+  territory: string;
+  tags: string[];
+  consent: ConsentPreferences;
+  /** Field keys the AI auto-populated — drives the "AI-filled" markers. */
+  aiFilled: string[];
+}
+
+export type AiQuestionKind = "text" | "email" | "tel" | "select" | "consent";
+
+/** One clarifying question the AI asks before it will create the record. */
+export interface AiEntityQuestion {
+  id: string;
+  field: keyof AiEntityDraft;
+  prompt: string;
+  helper?: string;
+  kind: AiQuestionKind;
+  options?: { value: string; label: string }[];
+  suggestions?: string[];
+  optional?: boolean;
+}
+
 /** A one-click starting point that prefills the composer/compose brief. */
 export interface AiEmailStarter {
   id: string;
