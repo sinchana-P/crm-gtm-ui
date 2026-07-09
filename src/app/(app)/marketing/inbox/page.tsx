@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Inbox, Mail, MessageCircle, Send } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { Inbox, Mail, MessageCircle, RefreshCw, Send, Sparkles, Undo2, Wand2 } from "lucide-react";
 import { WhatsAppThreadView } from "@/components/whatsapp/whatsapp-thread-view";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { MOCK_INBOX, SNIPPETS, WHATSAPP_THREADS } from "@/lib/mock-data";
+import { draftReply, REPLY_REFINE_ACTIONS, rewriteText } from "@/lib/ai-email";
 import { formatRelative } from "@/lib/format";
 import { useViewScope } from "@/hooks/use-view-scope";
 import { filterWhatsAppThreadsByView } from "@/lib/view-scope";
@@ -33,6 +34,20 @@ export default function MarketingInboxPage() {
   const [channel, setChannel] = useState<"all" | "email" | "whatsapp">("all");
   const [reply, setReply] = useState("");
   const [view, setView] = useState<"list" | "wa-threads">("list");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiDrafted, setAiDrafted] = useState(false);
+  const [undoText, setUndoText] = useState("");
+  const aiVariant = useRef(0);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  function selectMessage(id: string) {
+    setSelectedId(id);
+    setReply("");
+    setAiDrafted(false);
+    setAiBusy(false);
+    setUndoText("");
+    aiVariant.current = 0;
+  }
 
   const scopedInbox = useMemo(() => filterInbox(MOCK_INBOX), [filterInbox]);
   const waThreads = useMemo(
@@ -46,6 +61,31 @@ export default function MarketingInboxPage() {
   const active = filtered.find((m) => m.id === selectedId) ?? filtered[0];
 
   const waUnread = waThreads.filter((t) => t.unread).length;
+
+  function draftWithAi() {
+    if (!active || aiBusy) return;
+    setAiBusy(true);
+    aiVariant.current = 0;
+    const t = setTimeout(() => {
+      setReply(draftReply(active, 0));
+      setAiDrafted(true);
+      setAiBusy(false);
+    }, 700);
+    timers.current.push(t);
+  }
+
+  function regenerateReply() {
+    if (!active) return;
+    setUndoText(reply);
+    aiVariant.current += 1;
+    setReply(draftReply(active, aiVariant.current));
+  }
+
+  function refineReply(action: (typeof REPLY_REFINE_ACTIONS)[number]["value"]) {
+    if (!reply.trim()) return;
+    setUndoText(reply);
+    setReply(rewriteText(reply, action));
+  }
 
   return (
     <div className="space-y-6">
@@ -106,7 +146,7 @@ export default function MarketingInboxPage() {
                     <button
                       key={msg.id}
                       type="button"
-                      onClick={() => setSelectedId(msg.id)}
+                      onClick={() => selectMessage(msg.id)}
                       className={cn(
                         "flex w-full flex-col gap-1 border-b px-4 py-3 text-left transition-colors hover:bg-muted/50",
                         active?.id === msg.id && "bg-muted"
@@ -189,20 +229,55 @@ export default function MarketingInboxPage() {
                     <Separator />
 
                     <div className="space-y-2">
-                      <Label>Reply</Label>
+                      <div className="flex items-center justify-between">
+                        <Label>Reply</Label>
+                        {active.channel === "email" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 border-violet-500/40 text-violet-700 dark:text-violet-400"
+                            onClick={draftWithAi}
+                            disabled={aiBusy}
+                          >
+                            <Sparkles className={cn("size-3.5", aiBusy && "animate-pulse")} />
+                            {aiBusy ? "Drafting…" : aiDrafted ? "Draft again" : "Draft with AI"}
+                          </Button>
+                        )}
+                      </div>
                       <Textarea
-                        rows={4}
+                        rows={5}
                         value={reply}
-                        onChange={(e) => setReply(e.target.value)}
-                        placeholder="Type your reply..."
+                        onChange={(e) => { setReply(e.target.value); }}
+                        placeholder="Type your reply, or let AI draft one from their message…"
                       />
+                      {aiDrafted && reply && (
+                        <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-violet-500/30 bg-violet-500/[0.04] px-2.5 py-1.5">
+                          <span className="flex items-center gap-1 text-xs font-medium text-violet-700 dark:text-violet-400">
+                            <Wand2 className="size-3.5" /> Refine
+                          </span>
+                          {REPLY_REFINE_ACTIONS.map((a) => (
+                            <Button key={a.value} variant="ghost" size="sm" className="h-7" onClick={() => refineReply(a.value)}>
+                              {a.label}
+                            </Button>
+                          ))}
+                          <Button variant="ghost" size="sm" className="h-7" onClick={regenerateReply}>
+                            <RefreshCw className="size-3.5" /> Regenerate
+                          </Button>
+                          {undoText && (
+                            <Button variant="ghost" size="sm" className="h-7" onClick={() => { setReply(undoText); setUndoText(""); }}>
+                              <Undo2 className="size-3.5" /> Undo
+                            </Button>
+                          )}
+                          <span className="ml-auto text-[11px] text-muted-foreground">AI draft · review before sending</span>
+                        </div>
+                      )}
                       <div className="flex flex-wrap gap-2">
                         {SNIPPETS.map((s) => (
                           <Button
                             key={s.id}
                             variant="outline"
                             size="sm"
-                            onClick={() => setReply(s.body)}
+                            onClick={() => { setReply(s.body); setAiDrafted(false); }}
                           >
                             {s.name}
                           </Button>

@@ -174,3 +174,53 @@ export function rewriteText(text: string, action: AiRewriteAction, brandSignatur
 export function assembleDraft(sections: AiDraftSection[]): string {
   return sections.map((s) => s.text).join("\n\n");
 }
+
+/**
+ * Draft a contextual reply to an inbound message (the real-world inbox use case).
+ * Deterministic: intent is detected from the message, and `variant` cycles
+ * alternate phrasings for "regenerate". UI-only.
+ */
+export function draftReply(
+  incoming: { contactName: string; subject: string; preview: string },
+  variant: number,
+  signature = "Best,\nPriya"
+): string {
+  const q = `${incoming.subject} ${incoming.preview}`.toLowerCase();
+  const first = incoming.contactName.split(" ")[0] || "there";
+
+  const bodies: string[] = (() => {
+    if (/(schedule|call|meeting|next week|book|catch up|hop on|time to talk)/.test(q))
+      return [
+        "Thanks for the note! I'd be glad to hop on a call. Does Tuesday or Wednesday next week between 11am and 2pm work for you? Share what suits and I'll send a calendar invite.",
+        "Absolutely, let's set up a call. I have a few openings next week — would Tuesday 11:30am or Wednesday 3pm work? Happy to flex around your schedule.",
+      ];
+    if (/(discount|bulk|pricing|price|offer|quote|%|cost)/.test(q))
+      return [
+        "Great question — yes, the offer applies to bulk orders, and I can pull together a custom quote for your volume. Roughly how many units or seats are you considering?",
+        "Happy to help with pricing. Bulk orders qualify for additional savings on top of the current offer — if you tell me your expected volume, I'll send exact numbers today.",
+      ];
+    if (/(demo|credential|access|login|sign in|password)/.test(q))
+      return [
+        "Apologies for the delay! I've just re-sent your demo credentials to this address — you should see them within a few minutes. If they don't arrive, reply here and I'll set you up manually.",
+        "Sorry about that — your demo access is on its way now. Please check your inbox (and spam just in case). If anything's still off, I'll jump on a quick screen-share to get you in.",
+      ];
+    if (/(brochure|info|information|details|resource|deck|one.?pager)/.test(q))
+      return [
+        "Glad that was useful! I'd be happy to walk you through anything in more detail — would a quick 15-minute call this week help, or shall I send a tailored summary first?",
+        "Thanks for taking a look! If it's helpful, I can put together a short summary focused on your use case, or we can jump on a quick call — whichever you prefer.",
+      ];
+    return [
+      "Thanks for reaching out! Let me look into this and get back to you shortly. In the meantime, is there anything specific I can help clarify?",
+      "Appreciate you getting in touch — I'm on it and will follow up soon. Anything else you'd like me to include when I do?",
+    ];
+  })();
+
+  const body = bodies[variant % bodies.length];
+  return `Hi ${first},\n\n${body}\n\n${signature}`;
+}
+
+export const REPLY_REFINE_ACTIONS: { value: AiRewriteAction; label: string }[] = [
+  { value: "shorten", label: "Shorten" },
+  { value: "formalize", label: "More formal" },
+  { value: "casual", label: "Friendlier" },
+];
