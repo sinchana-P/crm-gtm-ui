@@ -10,6 +10,7 @@ import {
   Bot,
   Copy,
   ExternalLink,
+  MapPin,
   MessageSquare,
   MoreHorizontal,
   Pause,
@@ -89,6 +90,7 @@ import {
   ChatbotAvatar,
   ChatbotStatusBadge,
   CONVO_STATUS_META,
+  placementSummary,
   SENTIMENT_META,
 } from "@/components/marketing/chatbot/chatbot-shared";
 
@@ -181,6 +183,9 @@ export function ChatbotWorkspace() {
                           <ChatbotStatusBadge status={b.status} />
                         </div>
                         <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{b.description}</p>
+                        <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                          <MapPin className="size-3" /> {placementSummary(b.placement)}
+                        </p>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm"><MoreHorizontal className="size-4" /></Button>} />

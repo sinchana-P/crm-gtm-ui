@@ -10,6 +10,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import type {
+  ChatbotPlacement,
   ChatbotSourceStatus,
   ChatbotSourceType,
   ChatConversationStatus,
@@ -73,6 +74,14 @@ export const SENTIMENT_META: Record<ChatSentiment, { label: string; className: s
   neutral: { label: "Neutral", className: "text-muted-foreground" },
   negative: { label: "Negative", className: "text-red-600 dark:text-red-400" },
 };
+
+/** Human-readable summary of where a bot's widget appears. */
+export function placementSummary(p?: ChatbotPlacement): string {
+  if (!p) return "Not configured";
+  if (p.mode === "targeted")
+    return p.include.length ? `Only on: ${p.include.join(", ")}` : "Targeted (no pages selected yet)";
+  return p.exclude.length ? `All pages except ${p.exclude.join(", ")}` : "All pages";
+}
 
 export function ChatbotAvatar({ initials, color, className }: { initials?: string; color: string; className?: string }) {
   return (

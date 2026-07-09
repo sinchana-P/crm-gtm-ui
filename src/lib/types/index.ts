@@ -1154,6 +1154,17 @@ export interface ChatbotWidget {
   suggestedPrompts: string[];
 }
 
+/** Where a bot's embeddable widget appears on the external website. */
+export interface ChatbotPlacement {
+  mode: "everywhere" | "targeted";
+  /** URL path patterns the bot shows on (targeted mode). */
+  include: string[];
+  /** URL path patterns the bot is always hidden on. */
+  exclude: string[];
+  /** Allowed domains the embed is authorized for. */
+  domains: string[];
+}
+
 export interface ChatbotCrmSync {
   createContact: boolean;
   updateContact: boolean;
@@ -1172,6 +1183,7 @@ export interface Chatbot {
   createdAt: string;
   updatedAt: string;
   widget: ChatbotWidget;
+  placement?: ChatbotPlacement;
   sources: ChatbotKnowledgeSource[];
   intents: ChatbotIntent[];
   leadFields: ChatLeadField[];

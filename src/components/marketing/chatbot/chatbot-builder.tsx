@@ -8,6 +8,8 @@ import {
   Check,
   Copy,
   Database,
+  Globe,
+  MapPin,
   Plus,
   RefreshCw,
   Save,
@@ -25,6 +27,7 @@ import type {
   ChatbotCrmSync,
   ChatbotIntent,
   ChatbotKnowledgeSource,
+  ChatbotPlacement,
   ChatbotWidget,
   ChatHandoffRule,
   ChatHandoffTrigger,
@@ -68,7 +71,7 @@ import {
   useChatbotStore,
 } from "@/lib/stores/chatbot-store";
 import { cn } from "@/lib/utils";
-import { ChatbotWidgetPreview } from "@/components/marketing/chatbot/chatbot-widget-preview";
+import { ChatbotPlayground } from "@/components/marketing/chatbot/chatbot-playground";
 import {
   HANDOFF_TRIGGER_LABELS,
   INTENT_ACTION_META,
@@ -94,6 +97,7 @@ const DEFAULT_WIDGET: ChatbotWidget = {
   suggestedPrompts: ["What can you do?", "Book a demo"],
 };
 const DEFAULT_CRM: ChatbotCrmSync = { createContact: true, updateContact: true, logTranscript: true, lifecycleStage: "lead" };
+const DEFAULT_PLACEMENT: ChatbotPlacement = { mode: "everywhere", include: [], exclude: [], domains: ["connectnx.io"] };
 
 export function ChatbotBuilder({ chatbotId }: { chatbotId?: string }) {
   const router = useRouter();
@@ -105,6 +109,7 @@ export function ChatbotBuilder({ chatbotId }: { chatbotId?: string }) {
   const [name, setName] = useState(existing?.name ?? "New chatbot");
   const [description, setDescription] = useState(existing?.description ?? "");
   const [widget, setWidget] = useState<ChatbotWidget>(existing?.widget ?? DEFAULT_WIDGET);
+  const [placement, setPlacement] = useState<ChatbotPlacement>(existing?.placement ?? DEFAULT_PLACEMENT);
   const [sources, setSources] = useState<ChatbotKnowledgeSource[]>(existing?.sources ?? []);
   const [intents, setIntents] = useState<ChatbotIntent[]>(existing?.intents ?? []);
   const [leadFields, setLeadFields] = useState<ChatLeadField[]>(existing?.leadFields ?? []);
@@ -118,7 +123,7 @@ export function ChatbotBuilder({ chatbotId }: { chatbotId?: string }) {
   function save(activate: boolean) {
     if (!name.trim()) return toast.error("Give the chatbot a name");
     const now = new Date().toISOString();
-    const shared = { name: name.trim(), description: description.trim() || undefined, widget, sources, intents, leadFields, handoffRules, crm };
+    const shared = { name: name.trim(), description: description.trim() || undefined, widget, placement, sources, intents, leadFields, handoffRules, crm };
     if (editMode && existing) {
       updateChatbot(existing.id, { ...shared, status: activate ? "active" : existing.status });
       toast.success(activate ? "Chatbot published" : "Changes saved");
@@ -244,10 +249,11 @@ export function ChatbotBuilder({ chatbotId }: { chatbotId?: string }) {
                 </div>
               </CardContent>
             </Card>
+
+            <PlacementCard placement={placement} setPlacement={setPlacement} />
           </div>
           <div className="lg:sticky lg:top-6 lg:self-start">
-            <p className="mb-2 text-sm font-medium">Live preview</p>
-            <ChatbotWidgetPreview widget={widget} />
+            <ChatbotPlayground widget={widget} intents={intents} />
           </div>
         </div>
       )}
@@ -488,6 +494,101 @@ function CrmPanel({ crm, setCrm }: { crm: ChatbotCrmSync; setCrm: (c: ChatbotCrm
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function PatternList({
+  values,
+  placeholder,
+  onChange,
+}: {
+  values: string[];
+  placeholder: string;
+  onChange: (v: string[]) => void;
+}) {
+  const [val, setVal] = useState("");
+  const add = () => {
+    const v = val.trim();
+    if (v && !values.includes(v)) onChange([...values, v]);
+    setVal("");
+  };
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {values.map((v) => (
+          <span key={v} className="flex items-center gap-1 rounded-md border bg-muted/50 py-1 pr-1 pl-2 font-mono text-xs">
+            {v}
+            <button type="button" onClick={() => onChange(values.filter((x) => x !== v))} className="flex size-4 items-center justify-center rounded hover:bg-muted">
+              <X className="size-3" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <Input value={val} onChange={(e) => setVal(e.target.value)} placeholder={placeholder} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} className="h-8" />
+        <Button variant="outline" size="sm" onClick={add}><Plus className="size-4" /></Button>
+      </div>
+    </div>
+  );
+}
+
+function PlacementCard({ placement, setPlacement }: { placement: ChatbotPlacement; setPlacement: (p: ChatbotPlacement) => void }) {
+  const patch = (p: Partial<ChatbotPlacement>) => setPlacement({ ...placement, ...p });
+  return (
+    <Card className="shadow-none">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base"><MapPin className="size-4 text-muted-foreground" /> Where it appears</CardTitle>
+        <p className="text-sm text-muted-foreground">Control which pages of your site show this bot. Use different bots on different pages.</p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={() => patch({ mode: "everywhere" })}
+            className={cn("flex flex-1 items-start gap-3 rounded-lg border p-3 text-left transition-colors", placement.mode === "everywhere" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50")}
+          >
+            <Globe className={cn("mt-0.5 size-4", placement.mode === "everywhere" ? "text-primary" : "text-muted-foreground")} />
+            <span><span className="block text-sm font-medium">All pages</span><span className="block text-xs text-muted-foreground">Show site-wide, with optional exceptions.</span></span>
+          </button>
+          <button
+            type="button"
+            onClick={() => patch({ mode: "targeted" })}
+            className={cn("flex flex-1 items-start gap-3 rounded-lg border p-3 text-left transition-colors", placement.mode === "targeted" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50")}
+          >
+            <MapPin className={cn("mt-0.5 size-4", placement.mode === "targeted" ? "text-primary" : "text-muted-foreground")} />
+            <span><span className="block text-sm font-medium">Specific pages</span><span className="block text-xs text-muted-foreground">Only on URLs that match your rules.</span></span>
+          </button>
+        </div>
+
+        {placement.mode === "targeted" ? (
+          <div className="grid gap-2">
+            <Label className="text-xs">Show only on pages where the URL path contains</Label>
+            <PatternList values={placement.include} placeholder="/pricing" onChange={(v) => patch({ include: v })} />
+          </div>
+        ) : (
+          <div className="grid gap-2">
+            <Label className="text-xs">Hide on these pages (URL path contains)</Label>
+            <PatternList values={placement.exclude} placeholder="/checkout" onChange={(v) => patch({ exclude: v })} />
+          </div>
+        )}
+
+        <div className="grid gap-2">
+          <Label className="text-xs">Authorized domains</Label>
+          <PatternList values={placement.domains} placeholder="connectnx.io" onChange={(v) => patch({ domains: v })} />
+          <p className="text-xs text-muted-foreground">The embed only runs on these domains.</p>
+        </div>
+
+        <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+          <span className="text-muted-foreground">Live on: </span>
+          <span className="font-medium">
+            {placement.mode === "targeted"
+              ? placement.include.length ? placement.include.join(", ") : "no pages selected"
+              : placement.exclude.length ? `all pages except ${placement.exclude.join(", ")}` : "all pages"}
+          </span>
+          <span className="text-muted-foreground"> · {placement.domains.join(", ") || "no domains"}</span>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

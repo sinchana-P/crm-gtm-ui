@@ -23,6 +23,7 @@ export const MOCK_CHATBOTS: Chatbot[] = [
       welcomeMessage: "Hi 👋 I'm Ava. Ask me anything about Connect NX, or I can connect you with the team.",
       suggestedPrompts: ["What does Connect NX cost?", "Book a demo", "How does segmentation work?"],
     },
+    placement: { mode: "everywhere", include: [], exclude: ["/pricing", "/checkout"], domains: ["connectnx.io", "www.connectnx.io"] },
     sources: [
       { id: "s1", type: "url", name: "connectnx.io/docs", detail: "142 pages crawled", status: "trained", chunks: 1420, updatedAt: "2026-07-05T09:00:00Z" },
       { id: "s2", type: "document", name: "Product FAQ.pdf", detail: "38 pages", status: "trained", chunks: 210, updatedAt: "2026-07-02T09:00:00Z" },
@@ -71,6 +72,7 @@ export const MOCK_CHATBOTS: Chatbot[] = [
       welcomeMessage: "Hey! Comparing plans? I can help you find the right fit or set up a quick demo.",
       suggestedPrompts: ["Compare plans", "Book a demo", "Do you offer discounts?"],
     },
+    placement: { mode: "targeted", include: ["/pricing", "/plans"], exclude: [], domains: ["connectnx.io", "www.connectnx.io"] },
     sources: [
       { id: "s1", type: "faq", name: "Pricing FAQ", detail: "24 Q&A pairs", status: "trained", chunks: 24, updatedAt: "2026-07-01T09:00:00Z" },
       { id: "s2", type: "text", name: "Discount policy snippet", detail: "manual entry", status: "trained", chunks: 3, updatedAt: "2026-06-28T09:00:00Z" },
@@ -111,6 +113,7 @@ export const MOCK_CHATBOTS: Chatbot[] = [
       welcomeMessage: "Hi! I can help with setup, billing, and troubleshooting.",
       suggestedPrompts: ["Reset my password", "Billing question", "Talk to support"],
     },
+    placement: { mode: "everywhere", include: [], exclude: [], domains: ["app.connectnx.io"] },
     sources: [
       { id: "s1", type: "url", name: "help.connectnx.io", detail: "not yet crawled", status: "queued", chunks: 0, updatedAt: "2026-07-05T09:00:00Z" },
     ],

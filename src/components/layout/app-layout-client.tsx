@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/shared/app-sidebar";
 import { AdminOnlyGuard, ViewScopeBanner } from "@/components/shared/view-scope";
+import { CrmCopilot } from "@/components/copilot/crm-copilot";
 import { cn } from "@/lib/utils";
 
 const RECORD_PAGE_PATTERN = /^\/(leads|contacts|customers)\/[^/]+$/;
@@ -31,6 +32,7 @@ export function AppLayoutClient({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
+      <CrmCopilot />
     </div>
   );
 }
