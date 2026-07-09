@@ -1236,3 +1236,92 @@ export interface ChatVolumePoint {
   conversations: number;
   resolved: number;
 }
+
+// ── AI-Powered Email Draft Assistance ───────────────────────────────────────
+
+export type AiTone =
+  | "friendly"
+  | "professional"
+  | "playful"
+  | "concise"
+  | "persuasive"
+  | "empathetic";
+
+export type AiLength = "short" | "medium" | "long";
+
+export interface AiDraftContext {
+  goal: string;
+  audience: string;
+  tone: AiTone;
+  keyMessage: string;
+  length: AiLength;
+  cta: string;
+  applyBrandVoice: boolean;
+}
+
+export interface AiSubjectOption {
+  id: string;
+  text: string;
+  preheader: string;
+  rationale: string;
+}
+
+export type AiSectionKind = "greeting" | "paragraph" | "cta" | "signoff";
+
+export interface AiDraftSection {
+  id: string;
+  kind: AiSectionKind;
+  label: string;
+  text: string;
+}
+
+export type AiRewriteAction =
+  | "shorten"
+  | "expand"
+  | "formalize"
+  | "casual"
+  | "strengthen_cta"
+  | "brand_voice";
+
+export interface BrandVoice {
+  attributes: string[];
+  readingLevel: "simple" | "standard" | "expert";
+  emoji: "none" | "sparingly" | "liberal";
+  doList: string[];
+  dontList: string[];
+  sample: string;
+  signature: string;
+}
+
+export type AiNextActionType = "campaign" | "sequence" | "segment" | "send_time" | "content";
+
+export interface AiNextAction {
+  id: string;
+  title: string;
+  rationale: string;
+  type: AiNextActionType;
+  impact: string;
+  confidence: number;
+}
+
+export type AiAgentStepStatus =
+  | "pending"
+  | "awaiting_approval"
+  | "approved"
+  | "done"
+  | "rejected";
+
+export interface AiAgentStep {
+  id: string;
+  title: string;
+  detail: string;
+  requiresApproval: boolean;
+  status: AiAgentStepStatus;
+}
+
+export interface AiAgentRun {
+  id: string;
+  goal: string;
+  status: "planning" | "awaiting_approval" | "running" | "completed";
+  steps: AiAgentStep[];
+}

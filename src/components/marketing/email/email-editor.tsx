@@ -15,6 +15,7 @@ import {
   Save,
   Send,
   Smartphone,
+  Sparkles,
   SquarePen,
   Trash2,
 } from "lucide-react";
@@ -56,6 +57,8 @@ import {
   PERSONALIZATION_TOKENS,
 } from "@/components/marketing/email/email-shared";
 import { TestSendDialog } from "@/components/marketing/email/test-send-dialog";
+import { AiAssistDrawer } from "@/components/marketing/ai-email/ai-assist-drawer";
+import type { AiDraftSection } from "@/lib/types";
 
 const PALETTE: EmailBlockType[] = [
   "heading",
@@ -127,6 +130,21 @@ export function EmailEditor({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [view, setView] = useState<"edit" | "desktop" | "mobile">("edit");
   const [testOpen, setTestOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+
+  function applyAiDraft(subject: string, sections: AiDraftSection[]) {
+    if (subject) setSubject(subject);
+    const aiBlocks: EmailBlock[] = sections.map((s) =>
+      s.kind === "cta"
+        ? { id: createBlockId(), type: "button", text: s.text.replace(/[→\s]+$/, ""), url: "", align: "left", buttonColor: "#2563eb" }
+        : s.kind === "greeting"
+          ? { id: createBlockId(), type: "heading", level: 2, text: s.text, align: "left" }
+          : { id: createBlockId(), type: "text", text: s.text, align: "left" }
+    );
+    setBlocks((bs) => [...bs, ...aiBlocks]);
+    setHtmlMode(false);
+    toast.success("AI draft added to your email");
+  }
   const [dragIndex, setDragIndex] = useState<number | null>(null);
 
   const selected = selectedId ? blocks.find((b) => b.id === selectedId) : null;
@@ -242,6 +260,7 @@ export function EmailEditor({
             <Button variant={view === "desktop" ? "secondary" : "ghost"} size="icon-sm" onClick={() => setView("desktop")}><Monitor className="size-4" /></Button>
             <Button variant={view === "mobile" ? "secondary" : "ghost"} size="icon-sm" onClick={() => setView("mobile")}><Smartphone className="size-4" /></Button>
           </div>
+          <Button variant="outline" onClick={() => setAiOpen(true)}><Sparkles className="size-4" /> AI Assist</Button>
           <Button variant="outline" onClick={() => setTestOpen(true)}><Send className="size-4" /> Send test</Button>
           <Button variant="outline" onClick={() => save(false)}><Save className="size-4" /> Save draft</Button>
           <Button onClick={() => save(true)}>Publish</Button>
@@ -415,6 +434,7 @@ export function EmailEditor({
       )}
 
       <TestSendDialog open={testOpen} onOpenChange={setTestOpen} templateName={name} />
+      <AiAssistDrawer open={aiOpen} onOpenChange={setAiOpen} onApply={applyAiDraft} />
     </div>
   );
 }
