@@ -127,7 +127,7 @@ export function SequenceWorkspace() {
     <div className="space-y-6">
       <PageHeader
         title="Sequences"
-        description="Automated multi-step drips and sales cadences — email, WhatsApp, waits, branches, and internal actions in one flow."
+        description="One builder for every automation — 1:1 rep cadences and bulk marketing drips, event- or manually-triggered, with branches, waits, and CRM actions in a single flow."
         actions={
           <Button onClick={() => router.push("/marketing/sequences/new")}>
             <Plus className="size-4" />

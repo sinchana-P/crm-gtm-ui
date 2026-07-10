@@ -27,11 +27,13 @@ import { cn } from "@/lib/utils";
 import { TRIGGER_META } from "@/components/marketing/sequences/sequence-shared";
 
 const TRIGGER_ORDER: SequenceTriggerType[] = [
+  "manual",
   "segment_joined",
+  "list_membership",
   "form_submitted",
   "tag_added",
-  "manual",
   "property_changed",
+  "deal_stage",
   "email_engagement",
   "date_based",
   "another_sequence",

@@ -253,10 +253,12 @@ export interface SequenceSender {
 
 export type SequenceTriggerType =
   | "segment_joined"
+  | "list_membership"
   | "form_submitted"
   | "tag_added"
   | "manual"
   | "property_changed"
+  | "deal_stage"
   | "email_engagement"
   | "date_based"
   | "another_sequence"
@@ -302,6 +304,9 @@ export type SequenceActionType =
   | "update_property"
   | "add_tag"
   | "remove_tag"
+  | "assign_owner"
+  | "set_lifecycle"
+  | "create_deal"
   | "enroll_sequence"
   | "unenroll_sequence"
   | "webhook";

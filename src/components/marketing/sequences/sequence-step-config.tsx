@@ -445,6 +445,9 @@ function ActionFields({
       {(actionType === "create_task" ||
         actionType === "notify_owner" ||
         actionType === "update_property" ||
+        actionType === "assign_owner" ||
+        actionType === "set_lifecycle" ||
+        actionType === "create_deal" ||
         actionType === "webhook") && (
         <div className="grid gap-2">
           <Label htmlFor="action-detail">Details</Label>
@@ -453,7 +456,15 @@ function ActionFields({
             value={step.actionSummary ?? ""}
             onChange={(e) => onPatch({ actionSummary: e.target.value })}
             placeholder={
-              actionType === "webhook" ? "https://…" : "What should happen?"
+              actionType === "webhook"
+                ? "https://…"
+                : actionType === "assign_owner"
+                  ? "Owner name, or blank for round-robin"
+                  : actionType === "set_lifecycle"
+                    ? "New stage (e.g. MQL, SQL, Customer)"
+                    : actionType === "create_deal"
+                      ? "Deal name / pipeline stage"
+                      : "What should happen?"
             }
           />
         </div>
