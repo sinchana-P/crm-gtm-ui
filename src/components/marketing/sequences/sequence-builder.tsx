@@ -59,7 +59,7 @@ import {
   flowChannel,
   senderShortLabel,
 } from "@/components/marketing/sequences/sequence-shared";
-import { SequenceFlowView } from "@/components/marketing/sequences/sequence-flow-view";
+import { SequenceFlowCanvas } from "@/components/marketing/sequences/sequence-flow-canvas";
 import { SequenceStepConfig } from "@/components/marketing/sequences/sequence-step-config";
 import { SequenceTriggerConfig } from "@/components/marketing/sequences/sequence-trigger-config";
 import { cn } from "@/lib/utils";
@@ -361,12 +361,13 @@ export function SequenceBuilder({
                   <span className="text-xs text-muted-foreground">{stepCount} steps</span>
                 </CardHeader>
                 <CardContent>
-                  <SequenceFlowView
+                  <SequenceFlowCanvas
                     flow={flow}
                     editable
                     onAdd={handleAdd}
                     onEdit={setEditingId}
                     onDelete={handleDelete}
+                    height={640}
                   />
                 </CardContent>
               </Card>

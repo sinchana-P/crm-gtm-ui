@@ -62,7 +62,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDateTime, formatRelative } from "@/lib/format";
 import { useSequenceStore } from "@/lib/stores/sequence-store";
 import { cn } from "@/lib/utils";
-import { SequenceFlowView } from "@/components/marketing/sequences/sequence-flow-view";
+import { SequenceFlowCanvas } from "@/components/marketing/sequences/sequence-flow-canvas";
 import {
   ChannelIcon,
   EXIT_REASON_LABELS,
@@ -289,7 +289,7 @@ export function SequenceDetail({ id }: { id: string }) {
             </CardHeader>
             <CardContent>
               {sequence.flow && sequence.flow.length > 0 ? (
-                <SequenceFlowView flow={sequence.flow} />
+                <SequenceFlowCanvas flow={sequence.flow} height={520} />
               ) : (
                 <p className="text-sm text-muted-foreground">No steps defined.</p>
               )}
@@ -377,7 +377,7 @@ export function SequenceDetail({ id }: { id: string }) {
 
         <TabsContent value="flow" className="mt-6">
           {sequence.flow && sequence.flow.length > 0 ? (
-            <SequenceFlowView flow={sequence.flow} />
+            <SequenceFlowCanvas flow={sequence.flow} height={620} />
           ) : (
             <p className="text-sm text-muted-foreground">No steps defined.</p>
           )}
