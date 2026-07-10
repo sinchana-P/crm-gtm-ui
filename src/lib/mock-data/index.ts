@@ -382,7 +382,7 @@ export const MOCK_SEGMENTS: SegmentRecord[] = [
     },
     usedIn: [
       { module: "campaign", refId: "cp5", name: "Government Accounts Outreach", status: "paused" },
-      { module: "automation", refId: "au2", name: "Lead score > 80 → Assign rep", status: "active" },
+      { module: "sequence", refId: "s2", name: "Outbound Sales Cadence", status: "active" },
     ],
   },
   {
@@ -428,7 +428,7 @@ export const MOCK_SEGMENTS: SegmentRecord[] = [
       ],
     },
     usedIn: [
-      { module: "automation", refId: "au1", name: "Form submit → Welcome sequence", status: "active" },
+      { module: "sequence", refId: "s1", name: "New Lead Welcome", status: "active" },
       { module: "sequence", refId: "s2", name: "Outbound Sales Cadence", status: "active" },
     ],
   },
@@ -1160,6 +1160,23 @@ export const MOCK_SEQUENCE_TEMPLATES: SequenceTemplate[] = [
       { id: "sl4", type: "wait", label: "Wait 2 days", waitMode: "duration", waitValue: 2, waitUnit: "days" },
       { id: "sl5", type: "whatsapp", label: "WhatsApp nudge", snippet: "Hi {{firstName}}, following up on my note." },
       { id: "sl6", type: "email", label: "Break-up email", templateId: "t3", subject: "Should I close your file?" },
+    ],
+  },
+  {
+    id: "tpl-handoff",
+    sender: REP_SENDER,
+    name: "Hot-lead handoff",
+    description: "Event-triggered CRM automation: when a lead's score crosses 80, assign an owner, create a call task, and alert sales.",
+    type: "sales",
+    category: "sales",
+    channel: "email",
+    triggers: [{ id: "tt6", type: "property_changed", property: "leadScore", operator: "greater_than", value: "80" }],
+    exit: { ...DEFAULT_EXIT, pauseOnReply: true },
+    flow: [
+      { id: "hl1", type: "action", label: "Assign to sales owner", actionType: "assign_owner", actionSummary: "Round-robin by territory" },
+      { id: "hl2", type: "action", label: "Create call task", actionType: "create_task", actionSummary: "Call within 1 business day" },
+      { id: "hl3", type: "action", label: "Notify sales owner", actionType: "notify_owner", actionSummary: "Hot lead — reach out today" },
+      { id: "hl4", type: "goal", label: "Goal: qualified (SQL)", goalCondition: "lifecycleStage = sql" },
     ],
   },
 ];
