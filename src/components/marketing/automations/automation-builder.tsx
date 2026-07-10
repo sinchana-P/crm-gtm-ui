@@ -51,7 +51,7 @@ import {
 } from "@/lib/stores/automation-store";
 import { useSegmentStore } from "@/lib/stores/segment-store";
 import { cn } from "@/lib/utils";
-import { AutomationCanvas } from "@/components/marketing/automations/automation-canvas";
+import { AutomationFlowCanvas } from "@/components/marketing/automations/automation-flow-canvas";
 import { AutomationNodeConfig } from "@/components/marketing/automations/automation-node-config";
 import { AutomationTriggerConfig } from "@/components/marketing/automations/automation-trigger-config";
 import { triggerSummary } from "@/components/marketing/automations/automation-shared";
@@ -213,7 +213,7 @@ export function AutomationBuilder({
                 </CardContent>
               </Card>
 
-              <AutomationCanvas
+              <AutomationFlowCanvas
                 triggers={triggers}
                 nodes={nodes}
                 editable
@@ -221,6 +221,7 @@ export function AutomationBuilder({
                 onEdit={setEditingId}
                 onDelete={handleDelete}
                 onEditTrigger={() => setTriggerOpen(true)}
+                height={640}
               />
             </>
           ) : (

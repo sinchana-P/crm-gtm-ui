@@ -33,7 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDateTime, formatRelative } from "@/lib/format";
 import { useAutomationStore } from "@/lib/stores/automation-store";
 import { cn } from "@/lib/utils";
-import { AutomationCanvas } from "@/components/marketing/automations/automation-canvas";
+import { AutomationFlowCanvas } from "@/components/marketing/automations/automation-flow-canvas";
 import {
   AutomationStatusBadge,
   TRIGGER_META,
@@ -130,13 +130,13 @@ export function AutomationDetail({ id }: { id: string }) {
               <p className="text-sm text-muted-foreground">Reached and continued counts per step.</p>
             </CardHeader>
             <CardContent>
-              <AutomationCanvas triggers={automation.triggers ?? []} nodes={automation.nodes ?? []} />
+              <AutomationFlowCanvas triggers={automation.triggers ?? []} nodes={automation.nodes ?? []} height={520} />
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="canvas" className="mt-6">
-          <AutomationCanvas triggers={automation.triggers ?? []} nodes={automation.nodes ?? []} />
+          <AutomationFlowCanvas triggers={automation.triggers ?? []} nodes={automation.nodes ?? []} height={620} />
         </TabsContent>
 
         <TabsContent value="activity" className="mt-6">
