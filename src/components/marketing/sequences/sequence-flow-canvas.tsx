@@ -19,7 +19,7 @@ import {
   type Node,
   type NodeProps,
 } from "@xyflow/react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Zap } from "lucide-react";
 import type { SequenceStep, SequenceStepType } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -98,17 +98,18 @@ function AddMenu({
 
 function StartNode() {
   return (
-    <div className="w-[300px] rounded-xl border-2 border-primary/40 bg-background p-4 shadow-sm">
-      <div className="flex items-center gap-2">
-        <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <span className="text-sm font-bold">▸</span>
+    <div className="w-[300px] overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-b from-primary/10 to-background shadow-sm">
+      <div className="flex items-center gap-3 p-4">
+        <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+          <Zap className="size-5" />
         </span>
-        <div>
-          <p className="text-sm font-semibold">Enrolled contacts start here</p>
-          <p className="text-xs text-muted-foreground">Steps run top to bottom.</p>
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-primary/80">Enrollment</p>
+          <p className="truncate text-sm font-semibold">Contacts enter here</p>
+          <p className="truncate text-xs text-muted-foreground">Matching your enrollment triggers</p>
         </div>
       </div>
-      <Handle type="source" position={Position.Bottom} className="!size-2 !border-2 !border-primary !bg-background" />
+      <Handle type="source" position={Position.Bottom} className="!size-2.5 !border-2 !border-primary !bg-background" />
     </div>
   );
 }
@@ -173,25 +174,35 @@ interface AddData {
   onAdd: AddFn;
   containerId: string;
   afterId?: string;
+  primary?: boolean;
   [key: string]: unknown;
 }
 
 function AddNode({ data }: NodeProps) {
-  const { onAdd, containerId, afterId } = data as unknown as AddData;
+  const { onAdd, containerId, afterId, primary } = data as unknown as AddData;
   return (
-    <div className="w-[300px]">
+    <div className="flex w-[300px] justify-center">
       <Handle type="target" position={Position.Top} className="!size-2 !border-2 !border-muted-foreground/40 !bg-background" />
       <AddMenu
         onAdd={onAdd}
         containerId={containerId}
         afterId={afterId}
         trigger={
-          <button
-            type="button"
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed py-2.5 text-sm text-muted-foreground transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary"
-          >
-            <Plus className="size-4" /> Add step
-          </button>
+          primary ? (
+            <button
+              type="button"
+              className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            >
+              <Plus className="size-4" /> Add your first step
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed bg-background/60 py-2.5 text-sm text-muted-foreground transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary"
+            >
+              <Plus className="size-4" /> Add step
+            </button>
+          )
         }
       />
     </div>
@@ -362,7 +373,12 @@ function buildGraph(props: CanvasProps): { rfNodes: Node[]; rfEdges: Edge[] } {
         id: addId,
         type: "add",
         position: { x: centerX - NODE_W / 2, y },
-        data: { onAdd, containerId, afterId: steps.length ? steps[steps.length - 1].id : undefined },
+        data: {
+          onAdd,
+          containerId,
+          afterId: steps.length ? steps[steps.length - 1].id : undefined,
+          primary: containerId === "main" && steps.length === 0,
+        },
         draggable: false,
         selectable: false,
       });
@@ -389,25 +405,39 @@ export function SequenceFlowCanvas(props: CanvasProps) {
     [props.flow, props.editable]
   );
 
+  const showMiniMap = rfNodes.length > 5;
+
   return (
-    <div className="rounded-xl border bg-muted/20" style={{ height: props.height ?? 600 }}>
+    <div
+      className="relative overflow-hidden rounded-xl border bg-gradient-to-b from-muted/40 to-background"
+      style={{ height: props.height ?? 600 }}
+    >
       <ReactFlow
         nodes={rfNodes}
         edges={rfEdges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
-        fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
+        fitViewOptions={{ padding: 0.3, maxZoom: 1.1 }}
         minZoom={0.3}
         maxZoom={1.5}
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable
+        proOptions={{ hideAttribution: true }}
         defaultEdgeOptions={{ type: "smoothstep" }}
       >
-        <Background variant={BackgroundVariant.Dots} gap={18} size={1} />
-        <Controls showInteractive={false} />
-        <MiniMap pannable zoomable className="!bg-background" nodeStrokeWidth={2} />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1.4} color="var(--border)" />
+        <Controls showInteractive={false} className="!rounded-lg !border !border-border !shadow-sm [&>button]:!border-border" />
+        {showMiniMap && (
+          <MiniMap
+            pannable
+            zoomable
+            nodeStrokeWidth={2}
+            className="!rounded-lg !border !border-border !bg-background"
+            maskColor="rgba(0,0,0,0.06)"
+          />
+        )}
       </ReactFlow>
     </div>
   );
