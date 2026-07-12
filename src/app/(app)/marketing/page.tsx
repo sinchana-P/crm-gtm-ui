@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  AppWindow,
   Calendar,
   FileInput,
   GitBranch,
@@ -44,6 +45,7 @@ const totalEnrolled = MOCK_SEQUENCES.reduce((a, s) => a + s.enrolled, 0);
 const quickActions = [
   { label: "New campaign", href: "/marketing/campaigns", icon: Mail },
   { label: "Build sequence", href: "/marketing/sequences", icon: GitBranch },
+  { label: "Landing page", href: "/marketing/landing-pages", icon: AppWindow },
   { label: "Create form", href: "/marketing/forms", icon: FileInput },
   { label: "View calendar", href: "/marketing/calendar", icon: Calendar },
 ];

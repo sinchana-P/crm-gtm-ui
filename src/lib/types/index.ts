@@ -1420,3 +1420,343 @@ export interface AiSavedDraft {
   createdAt: string;
   updatedAt: string;
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// Landing Pages & Builder (Marketing → Content)
+// A section/column canvas model benchmarked against HubSpot, Unbounce,
+// Instapage, Leadpages and ActiveCampaign page builders. UI-only.
+// ─────────────────────────────────────────────────────────────────────────
+
+export type LandingPageStatus =
+  | "draft"
+  | "published"
+  | "scheduled"
+  | "unpublished"
+  | "archived";
+
+/** Every element the builder palette can drop onto the canvas. */
+export type LandingBlockType =
+  | "heading"
+  | "text"
+  | "image"
+  | "button"
+  | "form"
+  | "video"
+  | "spacer"
+  | "divider"
+  | "list"
+  | "testimonial"
+  | "logos"
+  | "stats"
+  | "faq"
+  | "pricing"
+  | "countdown"
+  | "socialIcons"
+  | "navbar"
+  | "footer"
+  | "html";
+
+export type LandingDevice = "desktop" | "tablet" | "mobile";
+
+export type LandingFormFieldType =
+  | "text"
+  | "email"
+  | "phone"
+  | "textarea"
+  | "select"
+  | "checkbox"
+  | "consent"
+  | "hidden"
+  | "date"
+  | "number";
+
+/** A single input on an embedded lead-capture form. */
+export interface LandingFormField {
+  id: string;
+  type: LandingFormFieldType;
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  /** CRM contact/lead field this maps to on submit. */
+  mapTo?: string;
+  options?: string[];
+  /** Only shown after a returning visitor is known (progressive profiling). */
+  progressive?: boolean;
+  hiddenValue?: string;
+  width?: "full" | "half";
+}
+
+export type LandingFormAction = "thankYouPage" | "redirect" | "message";
+
+/** Post-submit behaviour + downstream automation for a form block. */
+export interface LandingFormConfig {
+  fields: LandingFormField[];
+  submitLabel: string;
+  layout?: "stacked" | "inline";
+  multiStep?: boolean;
+  recaptcha?: boolean;
+  action: LandingFormAction;
+  redirectUrl?: string;
+  thankYouMessage?: string;
+  /** Sequence enrolled on submit — id only, resolved elsewhere. */
+  followUpSequenceId?: string;
+  notifyEmail?: string;
+  consentRequired?: boolean;
+}
+
+export interface LandingTestimonialItem {
+  id: string;
+  quote: string;
+  author: string;
+  role?: string;
+  avatarUrl?: string;
+}
+
+export interface LandingStatItem {
+  id: string;
+  value: string;
+  label: string;
+}
+
+export interface LandingFaqItem {
+  id: string;
+  question: string;
+  answer: string;
+}
+
+export interface LandingPricingTier {
+  id: string;
+  name: string;
+  price: string;
+  period?: string;
+  features: string[];
+  ctaLabel?: string;
+  highlighted?: boolean;
+}
+
+/** Per-device visibility + spacing overrides for responsive design. */
+export interface LandingResponsive {
+  hiddenOn?: LandingDevice[];
+}
+
+/** A single element on the canvas. Fields are denormalized/optional by type. */
+export interface LandingBlock {
+  id: string;
+  type: LandingBlockType;
+  // text-ish
+  text?: string;
+  level?: 1 | 2 | 3 | 4;
+  align?: "left" | "center" | "right";
+  // media
+  src?: string;
+  alt?: string;
+  posterUrl?: string;
+  videoUrl?: string;
+  // button
+  url?: string;
+  buttonStyle?: "primary" | "secondary" | "outline";
+  buttonSize?: "sm" | "md" | "lg";
+  // spacer/divider
+  height?: number;
+  // list / features
+  items?: string[];
+  icon?: string;
+  // rich collections
+  form?: LandingFormConfig;
+  testimonials?: LandingTestimonialItem[];
+  stats?: LandingStatItem[];
+  faqs?: LandingFaqItem[];
+  pricing?: LandingPricingTier[];
+  logos?: string[];
+  socials?: string[];
+  countdownTo?: string;
+  navLinks?: { id: string; label: string; url: string }[];
+  html?: string;
+  // styling
+  textColor?: string;
+  bgColor?: string;
+  responsive?: LandingResponsive;
+}
+
+export type LandingBackgroundType = "none" | "color" | "gradient" | "image";
+
+export interface LandingBackground {
+  type: LandingBackgroundType;
+  color?: string;
+  gradientFrom?: string;
+  gradientTo?: string;
+  imageUrl?: string;
+  /** Dark overlay opacity 0-100 for legibility over images. */
+  overlay?: number;
+}
+
+/** A full-width horizontal band containing 1-3 columns of blocks. */
+export interface LandingSection {
+  id: string;
+  label?: string;
+  columns: 1 | 2 | 3;
+  /** One block array per column. length === columns. */
+  content: LandingBlock[][];
+  background: LandingBackground;
+  paddingY?: "none" | "sm" | "md" | "lg" | "xl";
+  width?: "boxed" | "full";
+  verticalAlign?: "top" | "center" | "bottom";
+  /** Reusable/global section — edits propagate everywhere it's used. */
+  global?: boolean;
+  responsive?: LandingResponsive;
+}
+
+export interface LandingTheme {
+  primaryColor: string;
+  fontFamily: "sans" | "serif" | "mono";
+  buttonRadius: "none" | "sm" | "md" | "full";
+  contentWidth: "narrow" | "normal" | "wide";
+  baseColor?: string;
+}
+
+export interface LandingSeo {
+  title?: string;
+  metaDescription?: string;
+  slug: string;
+  canonicalUrl?: string;
+  ogImageUrl?: string;
+  keywords?: string;
+  noIndex?: boolean;
+  language?: string;
+}
+
+export interface LandingTracking {
+  gaMeasurementId?: string;
+  metaPixelId?: string;
+  linkedInPartnerId?: string;
+  customHeadCode?: string;
+  customFooterCode?: string;
+  cookieBanner?: boolean;
+}
+
+/** An A/B test variant of a page — shares analytics, split by weight. */
+export interface LandingVariant {
+  id: string;
+  label: string;
+  /** Traffic percentage 0-100. */
+  weight: number;
+  sections: LandingSection[];
+  views: number;
+  conversions: number;
+  isControl?: boolean;
+}
+
+export interface LandingAbTest {
+  enabled: boolean;
+  goal: "form_submit" | "button_click" | "page_view";
+  variants: LandingVariant[];
+  winnerVariantId?: string;
+  status?: "running" | "ended";
+}
+
+export interface LandingDailyStat {
+  date: string;
+  views: number;
+  submissions: number;
+}
+
+export interface LandingSourceStat {
+  source: string;
+  views: number;
+  conversionRate: number;
+}
+
+export interface LandingDeviceStat {
+  device: LandingDevice;
+  share: number;
+}
+
+export interface LandingSubmission {
+  id: string;
+  name: string;
+  email: string;
+  submittedAt: string;
+  source?: string;
+  device?: LandingDevice;
+}
+
+export interface LandingAnalytics {
+  views: number;
+  uniqueVisitors: number;
+  submissions: number;
+  conversionRate: number;
+  bounceRate: number;
+  avgTimeSeconds: number;
+  daily: LandingDailyStat[];
+  sources: LandingSourceStat[];
+  devices: LandingDeviceStat[];
+  submissionsList: LandingSubmission[];
+}
+
+export interface LandingRevision {
+  id: string;
+  label: string;
+  author: string;
+  createdAt: string;
+  current?: boolean;
+}
+
+export interface LandingPage {
+  id: string;
+  name: string;
+  status: LandingPageStatus;
+  /** Marketing goal — lead-gen, event, webinar, etc. */
+  type:
+    | "lead-gen"
+    | "event"
+    | "webinar"
+    | "ebook"
+    | "product"
+    | "coming-soon"
+    | "thank-you";
+  slug: string;
+  domain: string;
+  folderId?: string;
+  campaignId?: string;
+  owner: string;
+  accent: string;
+  thumbnailColor?: string;
+  sections: LandingSection[];
+  theme: LandingTheme;
+  seo: LandingSeo;
+  tracking: LandingTracking;
+  abTest?: LandingAbTest;
+  analytics: LandingAnalytics;
+  /** Require a password to view the published page. */
+  passwordProtected?: boolean;
+  password?: string;
+  /** Auto-unpublish date (page expires after this). */
+  expiresAt?: string;
+  revisions?: LandingRevision[];
+  publishedAt?: string;
+  scheduledFor?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LandingPageFolder {
+  id: string;
+  name: string;
+}
+
+export interface LandingPageTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category:
+    | "lead-gen"
+    | "event"
+    | "webinar"
+    | "ebook"
+    | "product"
+    | "coming-soon"
+    | "thank-you";
+  accent: string;
+  premium?: boolean;
+  sections: LandingSection[];
+}
