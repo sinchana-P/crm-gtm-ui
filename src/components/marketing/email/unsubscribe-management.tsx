@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import type { SuppressionEntry } from "@/lib/types";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
+import { UnsubscribeRates } from "@/components/marketing/analytics/unsubscribe-rates";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,8 +84,6 @@ export function UnsubscribeManagement() {
     });
   }, [suppression, search, reasonFilter]);
 
-  const maxReason = Math.max(...MOCK_UNSUBSCRIBE_REASONS.map((r) => r.count), 1);
-
   function addSuppression() {
     if (!newEmail.trim()) return;
     setSuppression((s) => [
@@ -119,7 +118,7 @@ export function UnsubscribeManagement() {
         <TabsList>
           <TabsTrigger value="preferences">Preference center</TabsTrigger>
           <TabsTrigger value="suppression">Suppression list</TabsTrigger>
-          <TabsTrigger value="insights">Insights</TabsTrigger>
+          <TabsTrigger value="insights">Unsubscribe rates</TabsTrigger>
         </TabsList>
 
         {/* Preference center */}
@@ -241,27 +240,9 @@ export function UnsubscribeManagement() {
           </Card>
         </TabsContent>
 
-        {/* Insights */}
+        {/* Unsubscribe rates */}
         <TabsContent value="insights" className="mt-6">
-          <Card className="shadow-none">
-            <CardHeader>
-              <CardTitle className="text-base">Why people unsubscribe (last 30 days)</CardTitle>
-              <CardDescription>Captured on the unsubscribe confirmation page.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {MOCK_UNSUBSCRIBE_REASONS.map((r) => (
-                <div key={r.reason} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>{r.reason}</span>
-                    <span className="tabular-nums text-muted-foreground">{r.count}</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-primary" style={{ width: `${(r.count / maxReason) * 100}%` }} />
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <UnsubscribeRates />
         </TabsContent>
       </Tabs>
 

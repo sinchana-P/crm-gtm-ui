@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Copy, ExternalLink, Plus } from "lucide-react";
+import { BarChart3, Copy, ExternalLink, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -94,7 +93,20 @@ export default function FormsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {f.submissions.toLocaleString()}
+                      <div className="flex items-center justify-end gap-1">
+                        <span>{f.submissions.toLocaleString()}</span>
+                        {f.status === "published" && (
+                          <ButtonLink
+                            href={`/marketing/forms/${f.id}`}
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`UTM analytics for ${f.name}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <BarChart3 className="size-4 text-muted-foreground" />
+                          </ButtonLink>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -104,8 +116,18 @@ export default function FormsPage() {
         </Card>
 
         <Card className="shadow-none lg:col-span-2">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">{selected.name}</CardTitle>
+            {selected.status === "published" && (
+              <ButtonLink
+                href={`/marketing/forms/${selected.id}`}
+                variant="outline"
+                size="sm"
+              >
+                <BarChart3 className="mr-2 size-4" />
+                View UTM analytics
+              </ButtonLink>
+            )}
           </CardHeader>
           <CardContent className="space-y-6">
             <Tabs defaultValue="step1">

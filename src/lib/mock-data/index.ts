@@ -2267,3 +2267,5 @@ export {
   getWhatsAppThread,
   getWhatsAppThreadsForContact,
 } from "./whatsapp";
+
+export * from "./marketing-analytics";
