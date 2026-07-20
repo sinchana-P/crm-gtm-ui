@@ -1,28 +1,28 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ComponentType, type ReactNode } from "react";
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
   XAxis,
   YAxis,
 } from "recharts";
 import {
-  ArrowLeft,
+  ArrowDownRight,
+  ArrowUpRight,
+  CheckCircle2,
+  Download,
+  Eye,
+  Lightbulb,
   Link2,
   Link2Off,
-  RefreshCw,
-  Search,
-  Share2,
-  TrendingUp,
-  Users,
+  Percent,
 } from "lucide-react";
 import { toast } from "sonner";
-import { PageHeader } from "@/components/shared/page-header";
-import { StatCard } from "@/components/shared/stat-card";
-import { ButtonLink } from "@/components/ui/button-link";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -37,9 +37,13 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/shared/empty-state";
-import { ShareFormDialog } from "@/components/marketing/analytics/share-form-dialog";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -47,378 +51,374 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
-  FORM_UTM_BY_SOURCE,
-  FORM_UTM_SUBMISSIONS,
-  FORM_UTM_SUMMARY,
-  FORM_UTM_TREND,
+  getSourceMeta,
+  type FormUtmData,
   type FormUtmSubmission,
 } from "@/lib/mock-data";
+import {
+  buildSourceShare,
+  totalViews,
+  type UtmDimension,
+} from "@/lib/marketing/utm-analytics";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { Sparkline } from "./sparkline";
+import { SubmissionSheet } from "./submission-sheet";
+import { UtmBreakdownTable } from "./utm-breakdown-table";
+
+type RangeKey = "7d" | "30d" | "90d" | "all";
+
+const RANGE_DAYS: Record<RangeKey, number> = { "7d": 7, "30d": 30, "90d": 90, all: 9999 };
 
 const trendConfig: ChartConfig = {
-  utm: { label: "With UTM", color: "var(--chart-1)" },
-  direct: { label: "Direct / no UTM", color: "var(--muted-foreground)" },
+  utm: { label: "Tagged", color: "var(--chart-1)" },
+  direct: { label: "Direct / untracked", color: "var(--muted-foreground)" },
 };
 
-type CoverageFilter = "all" | "utm" | "direct";
+function pctDelta(cur: number, prev: number): number | null {
+  if (prev === 0) return cur === 0 ? 0 : null;
+  return Math.round(((cur - prev) / prev) * 1000) / 10;
+}
 
-export function FormUtmDashboard() {
-  const s = FORM_UTM_SUMMARY;
-  const [range, setRange] = useState("30d");
-  const [filter, setFilter] = useState<CoverageFilter>("all");
-  const [search, setSearch] = useState("");
-  const [active, setActive] = useState<FormUtmSubmission | null>(null);
-  const [shareOpen, setShareOpen] = useState(false);
+interface KpiProps {
+  title: string;
+  value: string | number;
+  subtitle: string;
+  icon: ComponentType<{ className?: string }>;
+  spark: number[];
+  sparkColor?: string;
+  delta: number | null;
+  deltaGood?: boolean;
+  compare: boolean;
+}
 
-  const utmPct = Math.round((s.withUtm / s.totalLeads) * 100);
-  const directPct = 100 - utmPct;
-  const maxSource = Math.max(...FORM_UTM_BY_SOURCE.map((r) => r.leads), 1);
-  // Rank real sources most→least; pin the "Direct / none" bucket last (it isn't
-  // a source, so it never earns the "Most leads" / "Fewest" badge).
-  const trackedSorted = FORM_UTM_BY_SOURCE.filter((r) => !r.direct).sort(
-    (a, b) => b.leads - a.leads
+function KpiCard({ title, value, subtitle, icon: Icon, spark, sparkColor, delta, deltaGood = true, compare }: KpiProps) {
+  const showDelta = compare && delta != null;
+  const up = (delta ?? 0) >= 0;
+  const good = up ? deltaGood : !deltaGood;
+  return (
+    <Card className="shadow-none">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">{title}</span>
+          <Icon className="size-4 text-muted-foreground" />
+        </div>
+        <div className="mt-2 flex items-end justify-between gap-2">
+          <span className="text-2xl font-semibold tabular-nums">{value}</span>
+          <Sparkline data={spark} color={sparkColor} />
+        </div>
+        <div className="mt-1.5 flex items-center gap-1.5 text-xs">
+          {showDelta && (
+            <span
+              className={cn(
+                "flex items-center gap-0.5 rounded px-1 py-0.5 font-medium",
+                delta === 0
+                  ? "bg-muted text-muted-foreground"
+                  : good
+                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                    : "bg-red-500/10 text-red-600 dark:text-red-400"
+              )}
+            >
+              {delta !== 0 && (up ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />)}
+              {Math.abs(delta ?? 0)}%
+            </span>
+          )}
+          <span className="text-muted-foreground">{subtitle}</span>
+        </div>
+      </CardContent>
+    </Card>
   );
-  const directRow = FORM_UTM_BY_SOURCE.find((r) => r.direct);
-  const rankedSources = [...trackedSorted, ...(directRow ? [directRow] : [])];
-  const topKey = trackedSorted[0]?.key;
-  const lowKey = trackedSorted[trackedSorted.length - 1]?.key;
+}
 
-  const rows = useMemo(() => {
-    const q = search.toLowerCase();
-    return FORM_UTM_SUBMISSIONS.filter((r) => {
-      if (filter === "utm" && !r.source) return false;
-      if (filter === "direct" && r.source) return false;
-      if (q && !`${r.email} ${r.name} ${r.source ?? "direct"} ${r.campaign ?? ""}`.toLowerCase().includes(q))
-        return false;
-      return true;
-    });
-  }, [filter, search]);
+interface Props {
+  data: FormUtmData;
+}
+
+export function FormUtmDashboard({ data }: Props) {
+  const [range, setRange] = useState<RangeKey>("30d");
+  const [dimension, setDimension] = useState<UtmDimension>("source");
+  const [compare, setCompare] = useState(false);
+  const [active, setActive] = useState<FormUtmSubmission | null>(null);
+  const [activeSource, setActiveSource] = useState<string | null>(null);
+
+  const scoped = useMemo(() => {
+    if (range === "all") return data.submissions;
+    const maxTime = Math.max(...data.submissions.map((s) => new Date(s.submittedAt).getTime()));
+    const cutoff = maxTime - RANGE_DAYS[range] * 86_400_000;
+    return data.submissions.filter((s) => new Date(s.submittedAt).getTime() >= cutoff);
+  }, [data.submissions, range]);
+
+  const share = useMemo(() => buildSourceShare(scoped), [scoped]);
+  const shareTotal = scoped.length || 1;
+
+  const kpis = useMemo(() => {
+    const views = totalViews(scoped);
+    const submissions = scoped.length;
+    const withUtm = scoped.filter((s) => s.source).length;
+    const convRate = views > 0 ? Math.round((submissions / views) * 1000) / 10 : 0;
+    const utmPct = submissions ? Math.round((withUtm / submissions) * 100) : 0;
+
+    const asc = [...scoped].sort((a, b) => +new Date(a.submittedAt) - +new Date(b.submittedAt));
+    const mid = Math.floor(asc.length / 2);
+    const earlier = asc.slice(0, mid);
+    const recent = asc.slice(mid);
+    const d = (fn: (x: FormUtmSubmission[]) => number) => pctDelta(fn(recent), fn(earlier));
+
+    return {
+      views,
+      submissions,
+      withUtm,
+      utmPct,
+      convRate,
+      dViews: d((x) => totalViews(x)),
+      dSubs: d((x) => x.length),
+      dConv: d((x) => { const v = totalViews(x); return v ? (x.length / v) * 100 : 0; }),
+      dWithUtm: d((x) => x.filter((s) => s.source).length),
+    };
+  }, [scoped]);
+
+  // Clean KPI sparklines derived from the daily trend (not noisy per-row buckets).
+  const sparks = useMemo(() => {
+    const subs = data.trend.map((t) => t.utm + t.direct);
+    return {
+      visits: subs.map((n) => n * 5),
+      subs,
+      conv: subs,
+      attributed: data.trend.map((t) => t.utm),
+    };
+  }, [data.trend]);
+
+  const donutConfig = useMemo<ChartConfig>(() => {
+    const cfg: ChartConfig = {};
+    share.forEach((s) => { cfg[s.source] = { label: s.label, color: s.color }; });
+    return cfg;
+  }, [share]);
+
+  const insight = useMemo(() => {
+    const top = share.find((s) => s.source !== "direct");
+    const direct = share.find((s) => s.source === "direct");
+    if (!top) return null;
+    const topPct = Math.round((top.submissions / shareTotal) * 100);
+    const directPct = direct ? Math.round((direct.submissions / shareTotal) * 100) : 0;
+    return { topLabel: top.label, topSubs: top.submissions, topPct, directSubs: direct?.submissions ?? 0, directPct };
+  }, [share, shareTotal]);
+
+  const sourceSubs = useMemo(
+    () => (activeSource ? scoped.filter((s) => (s.source ?? "direct") === activeSource) : []),
+    [activeSource, scoped]
+  );
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={`${s.formName} — UTM Analytics`}
-        description="Which sources brought leads to this form — and how many arrived with no UTM at all."
-        actions={
-          <div className="flex items-center gap-2">
-            <ButtonLink href="/marketing/forms" variant="outline">
-              <ArrowLeft className="size-4" /> Back to forms
-            </ButtonLink>
-            <Select value={range} onValueChange={(v) => setRange(v ?? "30d")}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7d">Last 7 days</SelectItem>
-                <SelectItem value="30d">Last 30 days</SelectItem>
-                <SelectItem value="all">All time</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="icon" onClick={() => toast.success("Refreshed")}>
-              <RefreshCw className="size-4" />
-            </Button>
-            <Button onClick={() => setShareOpen(true)}>
-              <Share2 className="size-4" /> Share &amp; get link
-            </Button>
-          </div>
-        }
-      />
-
-      <div className="flex items-center gap-2 text-sm">
-        <Badge variant="outline" className="border-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
-          Published
-        </Badge>
-        <span className="text-muted-foreground">
-          {s.views.toLocaleString()} views · {s.submissions} submissions · {s.submissionRate}% submission rate
-        </span>
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Select value={range} onValueChange={(v) => setRange((v as RangeKey) ?? "30d")}>
+            <SelectTrigger className="h-9 w-36"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="90d">Last 90 days</SelectItem>
+              <SelectItem value="all">All time</SelectItem>
+            </SelectContent>
+          </Select>
+          <label className="flex items-center gap-2 pl-1 text-sm text-muted-foreground">
+            <Switch checked={compare} onCheckedChange={setCompare} />
+            Compare to previous
+          </label>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="outline"><Download className="size-4" /> Export</Button>} />
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => toast.success("Exporting breakdown (CSV)")}>Export breakdown (CSV)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => toast.success("Exporting respondents (CSV)")}>Export respondents (CSV)</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+
+      {/* Insight line */}
+      {insight && (
+        <div className="flex items-start gap-2.5 rounded-lg border bg-muted/40 p-3 text-sm">
+          <Lightbulb className="mt-0.5 size-4 shrink-0 text-amber-500" />
+          <p className="text-muted-foreground">
+            <span className="font-medium text-foreground">{insight.topLabel}</span> is your top source —{" "}
+            {insight.topSubs} submission{insight.topSubs === 1 ? "" : "s"} ({insight.topPct}%).
+            {insight.directSubs > 0 && (
+              <>
+                {" "}
+                <span className="font-medium text-foreground">{insight.directSubs} ({insight.directPct}%)</span> arrived
+                with no UTM — tag those links to attribute them.
+              </>
+            )}
+          </p>
+        </div>
+      )}
 
       {/* KPIs */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total leads" value={s.totalLeads} subtitle="From this form" icon={Users} />
-        <StatCard
-          title="With UTMs"
-          value={`${s.withUtm}`}
-          subtitle={`${utmPct}% of leads · tracked source`}
-          icon={Link2}
-          trend={{ value: "Attributed", positive: true }}
-        />
-        <StatCard
-          title="Direct / no UTM"
-          value={`${s.withoutUtm}`}
-          subtitle={`${directPct}% arrived on the bare URL`}
-          icon={Link2Off}
-          trend={{ value: "Unattributed", positive: false }}
-        />
-        <StatCard title="Top source" value={s.topSource} subtitle={`${s.topSourceLeads} leads`} icon={TrendingUp} />
+        <KpiCard title="Visits" value={kpis.views.toLocaleString()} subtitle="From tagged links" icon={Eye} spark={sparks.visits} delta={kpis.dViews} compare={compare} />
+        <KpiCard title="Submissions" value={kpis.submissions} subtitle="Leads captured" icon={CheckCircle2} sparkColor="var(--chart-2)" spark={sparks.subs} delta={kpis.dSubs} compare={compare} />
+        <KpiCard title="Conversion rate" value={`${kpis.convRate}%`} subtitle="Submissions ÷ visits" icon={Percent} sparkColor="var(--chart-3)" spark={sparks.conv} delta={kpis.dConv} compare={compare} />
+        <KpiCard title="Attributed" value={`${kpis.utmPct}%`} subtitle={`${kpis.withUtm} of ${kpis.submissions} tagged`} icon={Link2} sparkColor="var(--chart-4)" spark={sparks.attributed} delta={kpis.dWithUtm} compare={compare} />
       </div>
 
-      {/* Attribution coverage + trend */}
+      {/* Trend + composition */}
       <div className="grid gap-6 lg:grid-cols-5">
-        <Card className="shadow-none lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">Attribution coverage</CardTitle>
-            <CardDescription>Leads with a UTM source vs. those that came direct.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex h-4 overflow-hidden rounded-full">
-              <div
-                className="bg-primary"
-                style={{ width: `${utmPct}%` }}
-                title={`With UTM ${utmPct}%`}
-              />
-              <div
-                className="bg-muted-foreground/40"
-                style={{ width: `${directPct}%` }}
-                title={`Direct ${directPct}%`}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg border p-3">
-                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Link2 className="size-3.5" /> With UTMs
-                </p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums">{s.withUtm}</p>
-                <p className="text-xs text-muted-foreground">{utmPct}% of leads</p>
-              </div>
-              <div className="rounded-lg border p-3">
-                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Link2Off className="size-3.5" /> Direct / no UTM
-                </p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums">{s.withoutUtm}</p>
-                <p className="text-xs text-muted-foreground">{directPct}% of leads</p>
-              </div>
-            </div>
-            <p className="rounded-md bg-muted/50 p-2.5 text-xs text-muted-foreground">
-              Tip: tag every link that points to this form so more leads land in a known source instead of “Direct.”
-            </p>
-          </CardContent>
-        </Card>
-
         <Card className="shadow-none lg:col-span-3">
           <CardHeader>
             <CardTitle className="text-base">Submissions over time</CardTitle>
-            <CardDescription>UTM-tagged vs. direct submissions by day.</CardDescription>
+            <CardDescription>Tagged vs. untracked submissions by day.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={trendConfig} className="h-[220px] w-full">
-              <BarChart data={FORM_UTM_TREND} margin={{ left: 4, right: 4, top: 4 }}>
+            <ChartContainer config={trendConfig} className="h-[240px] w-full">
+              <BarChart data={data.trend} margin={{ left: 4, right: 4, top: 4 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} />
                 <YAxis tickLine={false} axisLine={false} width={28} allowDecimals={false} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="utm" stackId="a" fill="var(--color-utm)" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="utm" stackId="a" fill="var(--color-utm)" />
                 <Bar dataKey="direct" stackId="a" fill="var(--color-direct)" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ChartContainer>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Leads by source — ranked most → least */}
-      <Card className="shadow-none">
-        <CardHeader>
-          <CardTitle className="text-base">Leads by UTM source</CardTitle>
-          <CardDescription>Ranked most to least. “Direct / none” groups leads that arrived with no UTM.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {rankedSources.map((r) => {
-            const isTop = r.key === topKey;
-            const isLowest = r.key === lowKey;
-            return (
-              <div key={r.key} className="space-y-1.5">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2 font-medium">
-                    {r.direct ? (
-                      <Link2Off className="size-3.5 text-muted-foreground" />
-                    ) : (
-                      <Link2 className="size-3.5 text-muted-foreground" />
-                    )}
-                    {r.source}
-                    {!r.direct && (
-                      <Badge variant="outline" className="border-0 bg-muted text-xs text-muted-foreground">
-                        {r.medium}
-                      </Badge>
-                    )}
-                    {isTop && (
-                      <Badge variant="outline" className="border-0 bg-emerald-500/10 text-xs text-emerald-700 dark:text-emerald-400">
-                        Most leads
-                      </Badge>
-                    )}
-                    {isLowest && !r.direct && (
-                      <Badge variant="outline" className="border-0 bg-amber-500/10 text-xs text-amber-700 dark:text-amber-400">
-                        Fewest
-                      </Badge>
-                    )}
-                  </span>
-                  <span className="flex items-center gap-3">
-                    <span className="tabular-nums text-muted-foreground">{r.pct}%</span>
-                    <span className="w-8 text-right font-medium tabular-nums">{r.leads}</span>
-                  </span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className={cn("h-full rounded-full", r.direct ? "bg-muted-foreground/40" : "bg-primary")}
-                    style={{ width: `${(r.leads / maxSource) * 100}%` }}
-                  />
+        <Card className="shadow-none lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Submissions by source</CardTitle>
+            <CardDescription>Click a source to drill in.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {share.length ? (
+              <div className="flex items-center gap-4">
+                <ChartContainer config={donutConfig} className="aspect-square h-[150px] shrink-0">
+                  <PieChart>
+                    <ChartTooltip content={<ChartTooltipContent nameKey="label" />} />
+                    <Pie data={share} dataKey="submissions" nameKey="label" innerRadius={42} strokeWidth={2}>
+                      {share.map((s) => (
+                        <Cell key={s.source} fill={s.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ChartContainer>
+                <div className="flex-1 space-y-1.5">
+                  {share.map((s) => (
+                    <button
+                      key={s.source}
+                      type="button"
+                      onClick={() => setActiveSource(s.source)}
+                      className="flex w-full items-center justify-between gap-2 rounded px-1.5 py-1 text-sm transition-colors hover:bg-muted/60"
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
+                        <span className="truncate">{s.label}</span>
+                      </span>
+                      <span className="shrink-0 tabular-nums">
+                        <span className="font-medium">{s.submissions}</span>
+                        <span className="ml-1.5 text-xs text-muted-foreground">
+                          {Math.round((s.submissions / shareTotal) * 100)}%
+                        </span>
+                      </span>
+                    </button>
+                  ))}
                 </div>
               </div>
-            );
-          })}
-        </CardContent>
-      </Card>
+            ) : (
+              <EmptyState icon={Link2Off} title="No source data" description="No submissions in range." />
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Submissions table */}
+      {/* Performance table (hero) */}
       <Card className="shadow-none">
         <CardHeader className="gap-3">
           <div className="flex flex-col gap-1">
-            <CardTitle className="text-base">Submissions</CardTitle>
-            <CardDescription>Every lead this form captured and where it came from.</CardDescription>
+            <CardTitle className="text-base">Channel performance</CardTitle>
+            <CardDescription>Expand a row to drill from source into medium and campaign.</CardDescription>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <Tabs value={filter} onValueChange={(v) => setFilter((v as CoverageFilter) ?? "all")}>
-              <TabsList>
-                <TabsTrigger value="all">All ({FORM_UTM_SUBMISSIONS.length})</TabsTrigger>
-                <TabsTrigger value="utm">With UTM</TabsTrigger>
-                <TabsTrigger value="direct">Direct</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <div className="relative sm:w-64">
-              <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="pl-8"
-                placeholder="Search email, source…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
+          <Tabs value={dimension} onValueChange={(v) => setDimension((v as UtmDimension) ?? "source")}>
+            <TabsList>
+              <TabsTrigger value="source">Source</TabsTrigger>
+              <TabsTrigger value="medium">Medium</TabsTrigger>
+              <TabsTrigger value="campaign">Campaign</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </CardHeader>
         <CardContent className="p-0">
-          {rows.length === 0 ? (
-            <div className="p-6">
-              <EmptyState
-                icon={Link2Off}
-                title="No submissions match"
-                description="Try a different filter or clear the search."
-              />
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Lead</TableHead>
-                  <TableHead>Source / Medium</TableHead>
-                  <TableHead className="hidden md:table-cell">Campaign</TableHead>
-                  <TableHead className="hidden text-right lg:table-cell">Submitted</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((r) => (
-                  <TableRow key={r.id} className="cursor-pointer" onClick={() => setActive(r)}>
-                    <TableCell>
-                      <p className="font-medium">{r.name}</p>
-                      <p className="text-xs text-muted-foreground">{r.email}</p>
-                    </TableCell>
-                    <TableCell>
-                      {r.source ? (
-                        <span className="flex flex-wrap items-center gap-1.5">
-                          <Badge variant="outline" className="capitalize">{r.source}</Badge>
-                          <span className="text-muted-foreground">/</span>
-                          <Badge variant="outline" className="border-0 bg-muted text-muted-foreground">
-                            {r.medium}
-                          </Badge>
-                        </span>
-                      ) : (
-                        <Badge variant="outline" className="border-0 bg-muted-foreground/10 text-muted-foreground">
-                          <Link2Off className="mr-1 size-3" /> Direct
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="hidden font-mono text-xs text-muted-foreground md:table-cell">
-                      {r.campaign ?? "—"}
-                    </TableCell>
-                    <TableCell className="hidden text-right text-xs text-muted-foreground lg:table-cell">
-                      {formatDateTime(r.submittedAt)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <UtmBreakdownTable submissions={scoped} dimension={dimension} />
         </CardContent>
       </Card>
 
-      {/* Lead detail drawer */}
-      <Sheet open={!!active} onOpenChange={(o) => !o && setActive(null)}>
-        <SheetContent className="sm:max-w-md">
-          {active && (
-            <>
-              <SheetHeader>
-                <SheetTitle>{active.name}</SheetTitle>
-                <SheetDescription>{active.email}</SheetDescription>
-              </SheetHeader>
-              <div className="space-y-4 px-4 pb-6">
-                {!active.source && (
-                  <div className="flex items-center gap-2 rounded-lg border border-muted-foreground/20 bg-muted/40 p-3 text-sm">
-                    <Link2Off className="size-4 text-muted-foreground" />
-                    <span>Direct visit — arrived on the bare form URL with no UTM parameters.</span>
-                  </div>
-                )}
-                <dl className="grid grid-cols-3 gap-x-3 gap-y-3 text-sm">
-                  {[
-                    ["Source", active.source],
-                    ["Medium", active.medium],
-                    ["Campaign", active.campaign],
-                    ["Content", active.content],
-                    ["Term", active.term],
-                    ["Referrer", active.referrer],
-                  ].map(([label, value]) => (
-                    <div key={label} className="contents">
-                      <dt className="text-muted-foreground">{label}</dt>
-                      <dd className="col-span-2 font-medium break-words">
-                        {value ?? <span className="text-muted-foreground">—</span>}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-                <div>
-                  <p className="mb-1 text-xs text-muted-foreground">Landing URL</p>
-                  <code className="block rounded-md bg-muted p-2 text-xs break-all">{active.landingUrl}</code>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Submitted {formatDateTime(active.submittedAt)}
-                </p>
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+      <SubmissionSheet submission={active} onClose={() => setActive(null)} />
 
-      <ShareFormDialog
-        open={shareOpen}
-        onOpenChange={setShareOpen}
-        formName={s.formName}
-        baseUrl="https://forms.connectcrm.in/f/connect-with-tag"
+      <SourceSheet
+        source={activeSource}
+        submissions={sourceSubs}
+        onClose={() => setActiveSource(null)}
+        onSelectSubmission={(s) => { setActiveSource(null); setActive(s); }}
       />
+    </div>
+  );
+}
+
+function SourceSheet({
+  source,
+  submissions,
+  onClose,
+  onSelectSubmission,
+}: {
+  source: string | null;
+  submissions: FormUtmSubmission[];
+  onClose: () => void;
+  onSelectSubmission: (s: FormUtmSubmission) => void;
+}) {
+  const meta = getSourceMeta(source === "direct" ? null : source);
+  const views = totalViews(submissions);
+  const convRate = views > 0 ? Math.round((submissions.length / views) * 1000) / 10 : 0;
+  return (
+    <Sheet open={!!source} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <span className="size-3 rounded-full" style={{ backgroundColor: meta.chart }} />
+            {meta.label}
+          </SheetTitle>
+        </SheetHeader>
+        <div className="space-y-4 overflow-y-auto px-4 pb-6">
+          <div className="grid grid-cols-3 gap-3">
+            <Stat label="Visits" value={views} />
+            <Stat label="Submissions" value={submissions.length} />
+            <Stat label="Conv. rate" value={`${convRate}%`} />
+          </div>
+          <div className="space-y-1">
+            {submissions.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => onSelectSubmission(s)}
+                className="w-full rounded-md border p-2.5 text-left text-sm transition-colors hover:bg-muted/50"
+              >
+                <p className="font-medium">{s.email}</p>
+                <p className="text-xs text-muted-foreground">{s.campaign ?? "—"} · {formatDateTime(s.submittedAt)}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="rounded-lg border p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
     </div>
   );
 }

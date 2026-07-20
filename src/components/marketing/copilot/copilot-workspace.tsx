@@ -27,6 +27,7 @@ import {
   SegmentDraftCard,
   SegmentInsightCard,
 } from "@/components/marketing/copilot/copilot-cards";
+import { WorkflowDraftCard } from "@/components/marketing/copilot/workflow-draft-card";
 
 interface ChatMessage {
   id: string;
@@ -197,6 +198,8 @@ function ResponseBody({
       return <CampaignDraftCard draft={response.draft} />;
     case "segment_draft":
       return <SegmentDraftCard draft={response.draft} />;
+    case "workflow_draft":
+      return <WorkflowDraftCard draft={response.draft} />;
     case "campaign_insight":
       return <CampaignInsightCard insight={response.insight} />;
     case "segment_insight":

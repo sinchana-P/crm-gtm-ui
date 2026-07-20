@@ -110,6 +110,8 @@ export interface FormUtmSourceRow {
   direct?: boolean; // true = arrived on the bare URL with no UTM params
 }
 
+export type UtmDevice = "desktop" | "mobile" | "tablet";
+
 export interface FormUtmSubmission {
   id: string;
   email: string;
@@ -122,6 +124,11 @@ export interface FormUtmSubmission {
   landingUrl: string;
   referrer: string;
   submittedAt: string;
+  device: UtmDevice;
+  country: string;
+  city: string;
+  timeToSubmitSec: number;
+  firstTouch: boolean;
 }
 
 export interface FormUtmTrendPoint {
@@ -133,13 +140,13 @@ export interface FormUtmTrendPoint {
 export const FORM_UTM_SUMMARY = {
   formName: "Connect with TAG",
   views: 117,
-  submissions: 24,
-  submissionRate: 20.5,
-  totalLeads: 24,
-  withUtm: 17,
-  withoutUtm: 7, // direct / bare URL
+  submissions: 14,
+  submissionRate: 12.0,
+  totalLeads: 14,
+  withUtm: 10,
+  withoutUtm: 4, // direct / bare URL
   topSource: "google / cpc",
-  topSourceLeads: 6,
+  topSourceLeads: 3,
   lowestSource: "partner-referral / referral",
   lowestSourceLeads: 1,
 };
@@ -156,27 +163,89 @@ export const FORM_UTM_BY_SOURCE: FormUtmSourceRow[] = [
 
 export const FORM_UTM_TREND: FormUtmTrendPoint[] = [
   { label: "Jun 1", utm: 1, direct: 1 },
-  { label: "Jun 5", utm: 2, direct: 0 },
-  { label: "Jun 9", utm: 3, direct: 1 },
-  { label: "Jun 13", utm: 2, direct: 2 },
-  { label: "Jun 17", utm: 4, direct: 1 },
-  { label: "Jun 21", utm: 3, direct: 1 },
-  { label: "Jun 25", utm: 2, direct: 1 },
+  { label: "Jun 5", utm: 1, direct: 0 },
+  { label: "Jun 9", utm: 2, direct: 1 },
+  { label: "Jun 13", utm: 1, direct: 0 },
+  { label: "Jun 17", utm: 2, direct: 1 },
+  { label: "Jun 21", utm: 2, direct: 0 },
+  { label: "Jun 25", utm: 1, direct: 1 },
 ];
 
 export const FORM_UTM_SUBMISSIONS: FormUtmSubmission[] = [
-  { id: "s1", email: "brandon.fields@buckheadcloud.com", name: "Brandon Fields", source: "google", medium: "cpc", campaign: "top40-nominations-2026", content: "hero-cta", term: "innovation awards", landingUrl: "/tag?utm_source=google&utm_medium=cpc&utm_campaign=top40-nominations-2026", referrer: "google.com", submittedAt: "2026-06-25T09:12:00Z" },
-  { id: "s2", email: "rachel.kim@sandyspringsdev.com", name: "Rachel Kim", source: "linkedin", medium: "paid-social", campaign: "membership-q2", content: "carousel-a", term: null, landingUrl: "/tag?utm_source=linkedin&utm_medium=paid-social&utm_campaign=membership-q2", referrer: "linkedin.com", submittedAt: "2026-06-24T16:40:00Z" },
-  { id: "s3", email: "alicia.barnes@alpharettarobotics.com", name: "Alicia Barnes", source: null, medium: null, campaign: null, content: null, term: null, landingUrl: "/tag", referrer: "(direct)", submittedAt: "2026-06-24T14:05:00Z" },
-  { id: "s4", email: "caleb.monroe@maconsoftworks.com", name: "Caleb Monroe", source: "newsletter", medium: "email", campaign: "june-newsletter", content: "cta-footer", term: null, landingUrl: "/tag?utm_source=newsletter&utm_medium=email&utm_campaign=june-newsletter", referrer: "(email client)", submittedAt: "2026-06-24T11:22:00Z" },
-  { id: "s5", email: "marcus.steele@savannahsecure.com", name: "Marcus Steele", source: "google", medium: "cpc", campaign: "top40-nominations-2026", content: "search-ad-b", term: "top 40 companies", landingUrl: "/tag?utm_source=google&utm_medium=cpc&utm_campaign=top40-nominations-2026", referrer: "google.com", submittedAt: "2026-06-23T18:33:00Z" },
-  { id: "s6", email: "vanessa.okafor@decaturhealthai.com", name: "Vanessa Okafor", source: null, medium: null, campaign: null, content: null, term: null, landingUrl: "/tag", referrer: "(direct)", submittedAt: "2026-06-23T10:15:00Z" },
-  { id: "s7", email: "isaiah.coleman@albanyiot.com", name: "Isaiah Coleman", source: "tag-event", medium: "event", campaign: "ga-tech-summit", content: "booth-qr", term: null, landingUrl: "/tag?utm_source=tag-event&utm_medium=event&utm_campaign=ga-tech-summit", referrer: "(qr scan)", submittedAt: "2026-06-22T15:48:00Z" },
-  { id: "s8", email: "hannah.delgado@augustabiotech.com", name: "Hannah Delgado", source: "linkedin", medium: "paid-social", campaign: "retarget-warm", content: "single-image", term: null, landingUrl: "/tag?utm_source=linkedin&utm_medium=paid-social&utm_campaign=retarget-warm", referrer: "linkedin.com", submittedAt: "2026-06-22T09:04:00Z" },
-  { id: "s9", email: "nathan.reyes@roswelldata.com", name: "Nathan Reyes", source: "google", medium: "cpc", campaign: "top40-nominations-2026", content: "hero-cta", term: "georgia tech awards", landingUrl: "/tag?utm_source=google&utm_medium=cpc&utm_campaign=top40-nominations-2026", referrer: "google.com", submittedAt: "2026-06-21T13:20:00Z" },
-  { id: "s10", email: "grace.whitfield@columbusfintech.com", name: "Grace Whitfield", source: null, medium: null, campaign: null, content: null, term: null, landingUrl: "/tag", referrer: "bing.com", submittedAt: "2026-06-21T08:55:00Z" },
-  { id: "s11", email: "priya.raman@northgatehealth.com", name: "Priya Raman", source: "newsletter", medium: "email", campaign: "june-newsletter", content: "cta-footer", term: null, landingUrl: "/tag?utm_source=newsletter&utm_medium=email&utm_campaign=june-newsletter", referrer: "(email client)", submittedAt: "2026-06-20T17:30:00Z" },
-  { id: "s12", email: "andre.washington@summitcyber.com", name: "Andre Washington", source: "twitter", medium: "social", campaign: "brand-awareness", content: "thread-cta", term: null, landingUrl: "/tag?utm_source=twitter&utm_medium=social&utm_campaign=brand-awareness", referrer: "t.co", submittedAt: "2026-06-20T12:11:00Z" },
-  { id: "s13", email: "devin.clarke@midtownai.com", name: "Devin Clarke", source: "partner-referral", medium: "referral", campaign: "partner-webinar", content: "email-invite", term: null, landingUrl: "/tag?utm_source=partner-referral&utm_medium=referral&utm_campaign=partner-webinar", referrer: "partner.io", submittedAt: "2026-06-19T14:42:00Z" },
-  { id: "s14", email: "olivia.martinez@gwinnettsoft.com", name: "Olivia Martinez", source: null, medium: null, campaign: null, content: null, term: null, landingUrl: "/tag", referrer: "(direct)", submittedAt: "2026-06-19T09:08:00Z" },
+  { id: "s1", email: "brandon.fields@buckheadcloud.com", name: "Brandon Fields", source: "google", medium: "cpc", campaign: "top40-nominations-2026", content: "hero-cta", term: "innovation awards", landingUrl: "/tag?utm_source=google&utm_medium=cpc&utm_campaign=top40-nominations-2026", referrer: "google.com", submittedAt: "2026-06-25T09:12:00Z", device: "desktop", country: "United States", city: "Atlanta", timeToSubmitSec: 74, firstTouch: false },
+  { id: "s2", email: "rachel.kim@sandyspringsdev.com", name: "Rachel Kim", source: "linkedin", medium: "paid-social", campaign: "membership-q2", content: "carousel-a", term: null, landingUrl: "/tag?utm_source=linkedin&utm_medium=paid-social&utm_campaign=membership-q2", referrer: "linkedin.com", submittedAt: "2026-06-24T16:40:00Z", device: "desktop", country: "United States", city: "Sandy Springs", timeToSubmitSec: 118, firstTouch: true },
+  { id: "s3", email: "alicia.barnes@alpharettarobotics.com", name: "Alicia Barnes", source: null, medium: null, campaign: null, content: null, term: null, landingUrl: "/tag", referrer: "(direct)", submittedAt: "2026-06-24T14:05:00Z", device: "mobile", country: "United States", city: "Alpharetta", timeToSubmitSec: 52, firstTouch: false },
+  { id: "s4", email: "caleb.monroe@maconsoftworks.com", name: "Caleb Monroe", source: "newsletter", medium: "email", campaign: "june-newsletter", content: "cta-footer", term: null, landingUrl: "/tag?utm_source=newsletter&utm_medium=email&utm_campaign=june-newsletter", referrer: "(email client)", submittedAt: "2026-06-24T11:22:00Z", device: "mobile", country: "United States", city: "Macon", timeToSubmitSec: 96, firstTouch: true },
+  { id: "s5", email: "marcus.steele@savannahsecure.com", name: "Marcus Steele", source: "google", medium: "cpc", campaign: "top40-nominations-2026", content: "search-ad-b", term: "top 40 companies", landingUrl: "/tag?utm_source=google&utm_medium=cpc&utm_campaign=top40-nominations-2026", referrer: "google.com", submittedAt: "2026-06-23T18:33:00Z", device: "desktop", country: "United States", city: "Savannah", timeToSubmitSec: 63, firstTouch: false },
+  { id: "s6", email: "vanessa.okafor@decaturhealthai.com", name: "Vanessa Okafor", source: null, medium: null, campaign: null, content: null, term: null, landingUrl: "/tag", referrer: "(direct)", submittedAt: "2026-06-23T10:15:00Z", device: "tablet", country: "United States", city: "Decatur", timeToSubmitSec: 141, firstTouch: false },
+  { id: "s7", email: "isaiah.coleman@albanyiot.com", name: "Isaiah Coleman", source: "tag-event", medium: "event", campaign: "ga-tech-summit", content: "booth-qr", term: null, landingUrl: "/tag?utm_source=tag-event&utm_medium=event&utm_campaign=ga-tech-summit", referrer: "(qr scan)", submittedAt: "2026-06-22T15:48:00Z", device: "mobile", country: "United States", city: "Albany", timeToSubmitSec: 38, firstTouch: true },
+  { id: "s8", email: "hannah.delgado@augustabiotech.com", name: "Hannah Delgado", source: "linkedin", medium: "paid-social", campaign: "retarget-warm", content: "single-image", term: null, landingUrl: "/tag?utm_source=linkedin&utm_medium=paid-social&utm_campaign=retarget-warm", referrer: "linkedin.com", submittedAt: "2026-06-22T09:04:00Z", device: "desktop", country: "United States", city: "Augusta", timeToSubmitSec: 87, firstTouch: false },
+  { id: "s9", email: "nathan.reyes@roswelldata.com", name: "Nathan Reyes", source: "google", medium: "cpc", campaign: "top40-nominations-2026", content: "hero-cta", term: "georgia tech awards", landingUrl: "/tag?utm_source=google&utm_medium=cpc&utm_campaign=top40-nominations-2026", referrer: "google.com", submittedAt: "2026-06-21T13:20:00Z", device: "desktop", country: "United States", city: "Roswell", timeToSubmitSec: 109, firstTouch: true },
+  { id: "s10", email: "grace.whitfield@columbusfintech.com", name: "Grace Whitfield", source: null, medium: null, campaign: null, content: null, term: null, landingUrl: "/tag", referrer: "bing.com", submittedAt: "2026-06-21T08:55:00Z", device: "desktop", country: "United States", city: "Columbus", timeToSubmitSec: 71, firstTouch: false },
+  { id: "s11", email: "priya.raman@northgatehealth.com", name: "Priya Raman", source: "newsletter", medium: "email", campaign: "june-newsletter", content: "cta-footer", term: null, landingUrl: "/tag?utm_source=newsletter&utm_medium=email&utm_campaign=june-newsletter", referrer: "(email client)", submittedAt: "2026-06-20T17:30:00Z", device: "mobile", country: "United States", city: "Marietta", timeToSubmitSec: 132, firstTouch: false },
+  { id: "s12", email: "andre.washington@summitcyber.com", name: "Andre Washington", source: "twitter", medium: "social", campaign: "brand-awareness", content: "thread-cta", term: null, landingUrl: "/tag?utm_source=twitter&utm_medium=social&utm_campaign=brand-awareness", referrer: "t.co", submittedAt: "2026-06-20T12:11:00Z", device: "mobile", country: "United States", city: "Atlanta", timeToSubmitSec: 45, firstTouch: true },
+  { id: "s13", email: "devin.clarke@midtownai.com", name: "Devin Clarke", source: "partner-referral", medium: "referral", campaign: "partner-webinar", content: "email-invite", term: null, landingUrl: "/tag?utm_source=partner-referral&utm_medium=referral&utm_campaign=partner-webinar", referrer: "partner.io", submittedAt: "2026-06-19T14:42:00Z", device: "desktop", country: "United States", city: "Atlanta", timeToSubmitSec: 158, firstTouch: false },
+  { id: "s14", email: "olivia.martinez@gwinnettsoft.com", name: "Olivia Martinez", source: null, medium: null, campaign: null, content: null, term: null, landingUrl: "/tag", referrer: "(direct)", submittedAt: "2026-06-19T09:08:00Z", device: "tablet", country: "United States", city: "Duluth", timeToSubmitSec: 64, firstTouch: false },
 ];
+
+/* ----------------- Per-form UTM: derived helpers & resolver ----------------- */
+
+export interface UtmSourceMeta {
+  label: string;
+  /** Tailwind text/bg colour class stem via CSS var --chart-N (donut/dot). */
+  chart: string;
+  /** Synthetic views generated per submission, so views > submissions. */
+  viewsPerSubmission: number;
+}
+
+/** Metadata for the sources present in the per-form dataset. */
+export const FORM_UTM_SOURCE_META: Record<string, UtmSourceMeta> = {
+  google: { label: "Google", chart: "var(--chart-1)", viewsPerSubmission: 9 },
+  linkedin: { label: "LinkedIn", chart: "var(--chart-2)", viewsPerSubmission: 5 },
+  newsletter: { label: "Newsletter", chart: "var(--chart-3)", viewsPerSubmission: 3 },
+  "tag-event": { label: "TAG Event", chart: "var(--chart-4)", viewsPerSubmission: 6 },
+  "partner-referral": { label: "Partner referral", chart: "var(--chart-5)", viewsPerSubmission: 4 },
+  twitter: { label: "X (Twitter)", chart: "var(--chart-2)", viewsPerSubmission: 8 },
+  direct: { label: "Direct / none", chart: "var(--muted-foreground)", viewsPerSubmission: 4 },
+};
+
+export function getSourceMeta(source: string | null): UtmSourceMeta {
+  if (!source) return FORM_UTM_SOURCE_META.direct;
+  return (
+    FORM_UTM_SOURCE_META[source] ?? {
+      label: source,
+      chart: "var(--chart-2)",
+      viewsPerSubmission: 4,
+    }
+  );
+}
+
+export interface FormUtmData {
+  formId: string;
+  formName: string;
+  summary: typeof FORM_UTM_SUMMARY;
+  bySource: FormUtmSourceRow[];
+  trend: FormUtmTrendPoint[];
+  submissions: FormUtmSubmission[];
+  shareBaseUrl: string;
+}
+
+/**
+ * Resolves the per-form UTM dataset for a form id. UI-only: every published
+ * form maps onto the same rich mock dataset with its own name/base URL, so the
+ * merged Forms → detail navigation renders coherently. Swap for the analytics
+ * API later without touching the components.
+ */
+export function getFormUtmData(formId: string): FormUtmData {
+  const name = FORM_UTM_SUMMARY.formName;
+  const slug = formId || "form";
+  return {
+    formId: slug,
+    formName: name,
+    summary: FORM_UTM_SUMMARY,
+    bySource: FORM_UTM_BY_SOURCE,
+    trend: FORM_UTM_TREND,
+    submissions: FORM_UTM_SUBMISSIONS,
+    shareBaseUrl: `https://forms.connectcrm.in/f/${slug}`,
+  };
+}

@@ -1,10 +1,11 @@
 // Deterministic mock "AI" engine for the Marketing Copilot (UI-only, no backend).
 //
-// The Copilot understands four intents from a plain-language prompt:
-//   1. create a campaign      → returns a campaign draft the user can create
-//   2. ask about performance  → returns a campaign-performance answer with charts
-//   3. create a segment       → returns a segment draft (rules + estimated size)
-//   4. ask about segments     → returns a segment answer with a breakdown
+// The Copilot understands these intents from a plain-language prompt:
+//   1. create a campaign         → returns a campaign draft the user can create
+//   2. ask about performance     → returns a campaign-performance answer with charts
+//   3. create a segment          → returns a segment draft (rules + estimated size)
+//   4. ask about segments        → returns a segment answer with a breakdown
+//   5. create an automation      → returns a full workflow draft (trigger + steps)
 //
 // Everything here is pure and synchronous so the UI can render answers reliably
 // for demos. No real model is called; intent + entities are keyword-matched.
@@ -17,6 +18,10 @@ import type {
   SegmentConditionGroup,
   SegmentDefinition,
   SegmentRecord,
+  SequenceExitConfig,
+  SequenceSender,
+  SequenceStep,
+  SequenceTrigger,
 } from "@/lib/types";
 import {
   CONTACT_BASE,
@@ -33,13 +38,15 @@ export type CopilotIntent =
   | "campaign_insight"
   | "create_segment"
   | "segment_insight"
+  | "create_workflow"
   | "unknown";
 
 export type CopilotCapability =
   | "campaign_create"
   | "campaign_insight"
   | "segment_create"
-  | "segment_insight";
+  | "segment_insight"
+  | "workflow_create";
 
 export interface SuggestedPrompt {
   capability: CopilotCapability;
@@ -74,6 +81,12 @@ export const CAPABILITY_META: Record<
     description: "Understand segment size, growth and overlap.",
     icon: "Users",
     accent: "amber",
+  },
+  workflow_create: {
+    title: "Build an automation",
+    description: "Describe a goal — get a ready-to-edit workflow.",
+    icon: "Workflow",
+    accent: "violet",
   },
 };
 
@@ -110,6 +123,16 @@ export const SUGGESTED_PROMPTS: SuggestedPrompt[] = [
     label: "What is my largest audience?",
     prompt: "What is my largest segment and how big is it?",
   },
+  {
+    capability: "workflow_create",
+    label: "New Lead Welcome workflow",
+    prompt: "Need an automation workflow for a New Lead Welcome",
+  },
+  {
+    capability: "workflow_create",
+    label: "Win-back automation",
+    prompt: "Build a win-back automation for dormant customers",
+  },
 ];
 
 /* ------------------------------------------------------------ response types */
@@ -136,6 +159,25 @@ export interface SegmentDraft {
   estimatedCount: number;
   matchPct: number;
   confidence: number;
+}
+
+/**
+ * A generated automation workflow — the pieces needed to both preview it
+ * (diagram + step table) and materialize a real Sequence in the store.
+ */
+export interface WorkflowDraft {
+  name: string;
+  description: string;
+  type: "marketing" | "sales";
+  channel: "email" | "whatsapp" | "multi";
+  trigger: SequenceTrigger;
+  /** Human-readable one-liner for the trigger (matches the builder's summary). */
+  triggerSummary: string;
+  sender: SequenceSender;
+  exit: SequenceExitConfig;
+  flow: SequenceStep[];
+  stepCount: number;
+  emailCount: number;
 }
 
 export interface InsightMetric {
@@ -183,6 +225,7 @@ export type CopilotResponse =
   | { kind: "campaign_insight"; intent: CopilotIntent; text: string; insight: CampaignInsight }
   | { kind: "segment_draft"; intent: CopilotIntent; text: string; draft: SegmentDraft }
   | { kind: "segment_insight"; intent: CopilotIntent; text: string; insight: SegmentInsight }
+  | { kind: "workflow_draft"; intent: CopilotIntent; text: string; draft: WorkflowDraft }
   | { kind: "text"; intent: CopilotIntent; text: string; suggestions?: string[] };
 
 export interface CopilotContext {
@@ -194,8 +237,9 @@ export interface CopilotContext {
 /* --------------------------------------------------------------- utilities */
 
 const CREATE_WORDS = /\b(create|build|make|draft|set up|design|new|generate|launch|start)\b/;
-const CAMPAIGN_WORDS = /\b(campaigns?|email blasts?|blasts?|newsletters?|promos?|promotions?|broadcasts?|sends?|outreach|drips?)\b/;
+const CAMPAIGN_WORDS = /\b(campaigns?|email blasts?|blasts?|newsletters?|promos?|promotions?|broadcasts?|sends?|outreach)\b/;
 const SEGMENT_WORDS = /\b(segments?|audiences?|lists?|groups?|cohorts?|people who|contacts who|customers who|leads who)\b/;
+const WORKFLOW_WORDS = /\b(automations?|workflows?|drip|nurture|welcome series|onboarding flow|cadence|journey|sequence)\b/;
 const QUESTION_WORDS = /\b(how|what|which|why|when|show|tell|compare|rate|best|worst|top|performance|performing|trend|growing|shrinking|largest|biggest|smallest|number of|count)\b/;
 
 let conditionSeq = 0;
@@ -221,6 +265,13 @@ export function detectIntent(text: string): CopilotIntent {
   const isQuestion = QUESTION_WORDS.test(t) || t.trim().endsWith("?");
   const mentionsSegment = SEGMENT_WORDS.test(t);
   const mentionsCampaign = CAMPAIGN_WORDS.test(t);
+  const mentionsWorkflow = WORKFLOW_WORDS.test(t);
+
+  // Workflow/automation building — "need an automation workflow for …" has no
+  // explicit create verb, so match the workflow words directly (unless it's a
+  // question about existing workflows).
+  if (mentionsWorkflow && !isQuestion) return "create_workflow";
+  if (isCreate && mentionsWorkflow) return "create_workflow";
 
   if (isCreate && mentionsCampaign) return "create_campaign";
   if (isCreate && mentionsSegment) return "create_segment";
@@ -784,6 +835,243 @@ export function answerSegmentQuery(text: string, segments: SegmentRecord[]): Seg
   };
 }
 
+/* ------------------------------------------------- automation workflow build */
+
+let wfStepSeq = 0;
+function wfStep(step: Omit<SequenceStep, "id">): SequenceStep {
+  wfStepSeq += 1;
+  return { id: `wf-${Date.now()}-${wfStepSeq}`, ...step };
+}
+
+function emailStep(label: string, subject: string): SequenceStep {
+  return wfStep({ type: "email", label, subject });
+}
+function waitStep(value: number, unit: "minutes" | "hours" | "days"): SequenceStep {
+  return wfStep({ type: "wait", label: `Wait ${value} ${unit}`, waitMode: "duration", waitValue: value, waitUnit: unit });
+}
+function actionStep(label: string, actionType: SequenceStep["actionType"], summary: string): SequenceStep {
+  return wfStep({ type: "action", label, actionType, actionSummary: summary });
+}
+function goalStep(label: string, condition: string): SequenceStep {
+  return wfStep({ type: "goal", label, goalCondition: condition });
+}
+
+const MARKETING_SENDER: SequenceSender = {
+  mode: "marketing_address",
+  fromName: "Connect Team",
+  fromAddress: "hello@connectnx.io",
+  replyTo: "hello@connectnx.io",
+};
+const REP_SENDER: SequenceSender = { mode: "rep_inbox" };
+
+const WF_EXIT: SequenceExitConfig = {
+  pauseOnReply: true,
+  goalEnabled: false,
+  unenrollOnSegmentExit: true,
+  reEnrollment: "never",
+  oneActivePerContact: true,
+};
+
+interface WorkflowRecipe {
+  match: RegExp;
+  build: () => Omit<WorkflowDraft, "stepCount" | "emailCount" | "triggerSummary">;
+}
+
+const WORKFLOW_RECIPES: WorkflowRecipe[] = [
+  {
+    // New Lead Welcome — mirrors the reference: trigger → welcome → wait → follow-up
+    match: /welcome|new lead|new-lead|lead welcome|sign ?up|new subscriber/,
+    build: () => ({
+      name: "New Lead Welcome",
+      description: "Greets every new lead and follows up a couple of days later.",
+      type: "marketing",
+      channel: "email",
+      trigger: { id: "wf-trg", type: "custom_event", eventName: "lead_created" },
+      sender: MARKETING_SENDER,
+      exit: { ...WF_EXIT },
+      flow: [
+        emailStep("Welcome Email", "Welcome to Connect 👋"),
+        waitStep(2, "days"),
+        emailStep("Follow-up Email", "Getting started with Connect"),
+      ],
+    }),
+  },
+  {
+    match: /win[- ]?back|re-?engage|dormant|lapsed|inactive|churn/,
+    build: () => ({
+      name: "Win-Back Automation",
+      description: "Re-engages dormant contacts with an incentive, then a last-chance nudge.",
+      type: "marketing",
+      channel: "email",
+      trigger: { id: "wf-trg", type: "segment_joined" },
+      sender: MARKETING_SENDER,
+      exit: { ...WF_EXIT, goalEnabled: true, goalCondition: "daysSinceContact < 7" },
+      flow: [
+        emailStep("We miss you", "It's been a while, {{firstName}}"),
+        waitStep(3, "days"),
+        emailStep("Here's 20% off", "A little something to welcome you back"),
+        waitStep(4, "days"),
+        emailStep("Last chance", "Your offer expires tonight"),
+        goalStep("Reactivated", "daysSinceContact < 7"),
+      ],
+    }),
+  },
+  {
+    match: /onboard|activation|getting started|adopt/,
+    build: () => ({
+      name: "Customer Onboarding",
+      description: "Walks new customers through setup over their first week.",
+      type: "marketing",
+      channel: "email",
+      trigger: { id: "wf-trg", type: "custom_event", eventName: "account_created" },
+      sender: MARKETING_SENDER,
+      exit: { ...WF_EXIT },
+      flow: [
+        emailStep("Welcome & first steps", "Welcome to Connect — let's get you set up"),
+        waitStep(1, "days"),
+        emailStep("Set up your workspace", "Set up your workspace in 5 minutes"),
+        waitStep(3, "days"),
+        emailStep("Tips & best practices", "3 tips to get more from Connect"),
+        waitStep(3, "days"),
+        actionStep("Notify owner to check in", "notify_owner", "Ping the account owner to check in with the new customer"),
+      ],
+    }),
+  },
+  {
+    match: /nurtur|drip|educat|lead journey/,
+    build: () => ({
+      name: "Lead Nurture Drip",
+      description: "Educates leads over a few weeks and hands off when they qualify.",
+      type: "marketing",
+      channel: "email",
+      trigger: { id: "wf-trg", type: "segment_joined" },
+      sender: MARKETING_SENDER,
+      exit: { ...WF_EXIT, goalEnabled: true, goalCondition: "lifecycleStage = mql" },
+      flow: [
+        emailStep("Intro & value", "Here's how teams like yours use Connect"),
+        waitStep(4, "days"),
+        emailStep("Educational content", "A quick guide to {{topic}}"),
+        waitStep(4, "days"),
+        emailStep("Social proof", "How {{customer}} grew with Connect"),
+        waitStep(4, "days"),
+        emailStep("Soft CTA", "Want to see it in action?"),
+        goalStep("Became an MQL", "lifecycleStage = mql"),
+      ],
+    }),
+  },
+  {
+    match: /event|webinar|register|rsvp|conference/,
+    build: () => ({
+      name: "Event Reminder Series",
+      description: "Confirms registration and reminds attendees as the event approaches.",
+      type: "marketing",
+      channel: "email",
+      trigger: { id: "wf-trg", type: "form_submitted" },
+      sender: MARKETING_SENDER,
+      exit: { ...WF_EXIT },
+      flow: [
+        emailStep("You're registered", "You're in! Here are the details"),
+        waitStep(3, "days"),
+        emailStep("2 days to go", "Only 2 days until we go live"),
+        waitStep(2, "days"),
+        emailStep("Starts tomorrow", "See you tomorrow, {{firstName}}"),
+      ],
+    }),
+  },
+  {
+    match: /sales|outbound|prospect|cadence|cold/,
+    build: () => ({
+      name: "Sales Follow-up Cadence",
+      description: "A rep-sent 1:1 cadence with a task to call after a few touches.",
+      type: "sales",
+      channel: "email",
+      trigger: { id: "wf-trg", type: "manual" },
+      sender: REP_SENDER,
+      exit: { ...WF_EXIT, pauseOnReply: true },
+      flow: [
+        emailStep("Intro", "Quick question, {{firstName}}"),
+        waitStep(2, "days"),
+        emailStep("Bump", "Following up on my note"),
+        waitStep(3, "days"),
+        wfStep({ type: "task", label: "Call the prospect", config: "Give them a call if still no reply" }),
+        waitStep(2, "days"),
+        emailStep("Breakup", "Should I close your file?"),
+      ],
+    }),
+  },
+];
+
+function fallbackWorkflow(text: string): Omit<WorkflowDraft, "stepCount" | "emailCount" | "triggerSummary"> {
+  // Derive a name from the prompt after "for"/"about" if present.
+  const m = text.match(/(?:for|about|called)\s+(?:an?\s+)?["']?([\w\s&-]{3,40})/i);
+  const raw = m ? m[1].trim().replace(/\b(workflow|automation|sequence|campaign)\b/gi, "").trim() : "";
+  const name = raw ? `${titleCase(raw)} Automation` : "New Automation";
+  return {
+    name,
+    description: "A starting workflow — refine the trigger and add your email content.",
+    type: "marketing",
+    channel: "email",
+    trigger: { id: "wf-trg", type: "manual" },
+    sender: MARKETING_SENDER,
+    exit: { ...WF_EXIT },
+    flow: [
+      emailStep("First email", "Your subject line"),
+      waitStep(2, "days"),
+      emailStep("Follow-up email", "Your follow-up subject line"),
+    ],
+  };
+}
+
+export function buildWorkflowDraft(text: string): WorkflowDraft {
+  const t = text.toLowerCase();
+  const recipe = WORKFLOW_RECIPES.find((r) => r.match.test(t));
+  const base = recipe ? recipe.build() : fallbackWorkflow(text);
+
+  const emailCount = base.flow.filter((s) => s.type === "email").length;
+  return {
+    ...base,
+    triggerSummary: workflowTriggerSummary(base.trigger),
+    stepCount: base.flow.length,
+    emailCount,
+  };
+}
+
+/** Trigger one-liner — kept in sync with the sequence builder's triggerSummary. */
+export function workflowTriggerSummary(trigger: SequenceTrigger): string {
+  switch (trigger.type) {
+    case "custom_event":
+      return `${trigger.eventName ?? "custom"} event`;
+    case "segment_joined":
+      return "Contact joins a segment";
+    case "list_membership":
+      return "Contact added to a list";
+    case "form_submitted":
+      return "Contact submits a form";
+    case "tag_added":
+      return `Tag "${trigger.tag ?? "…"}" added`;
+    case "manual":
+      return "Manually enrolled by a rep";
+    case "property_changed":
+      return `${trigger.property ?? "Property"} changes`;
+    case "deal_stage":
+      return "Deal stage changes";
+    case "email_engagement":
+      return "Email engagement";
+    case "date_based":
+      return "A date is reached";
+    default:
+      return "Enrollment trigger";
+  }
+}
+
+/** Seconds represented by a duration wait step (for the details table). */
+export function waitSeconds(step: SequenceStep): number {
+  const v = step.waitValue ?? 0;
+  const unit = step.waitUnit ?? "days";
+  const per = unit === "minutes" ? 60 : unit === "hours" ? 3600 : 86400;
+  return v * per;
+}
+
 /* ------------------------------------------------------------- main dispatch */
 
 export function respond(text: string, ctx: CopilotContext): CopilotResponse {
@@ -819,12 +1107,26 @@ export function respond(text: string, ctx: CopilotContext): CopilotResponse {
       const insight = answerSegmentQuery(text, ctx.segments);
       return { kind: "segment_insight", intent, text: insight.headline, insight };
     }
+    case "create_workflow": {
+      const draft = buildWorkflowDraft(text);
+      return {
+        kind: "workflow_draft",
+        intent,
+        text: `Your ${draft.name} automation is all set. Here's what I built — review the flow, then create it to add your email content.`,
+        draft,
+      };
+    }
     default:
       return {
         kind: "text",
         intent,
-        text: "I can help you create campaigns, analyze campaign performance, build audience segments, and answer questions about your audiences. Try one of these:",
-        suggestions: SUGGESTED_PROMPTS.slice(0, 4).map((p) => p.prompt),
+        text: "I can help you create campaigns and automation workflows, build audience segments, and answer questions about performance and audiences. Try one of these:",
+        suggestions: [
+          SUGGESTED_PROMPTS[0].prompt,
+          SUGGESTED_PROMPTS.find((p) => p.capability === "workflow_create")!.prompt,
+          SUGGESTED_PROMPTS.find((p) => p.capability === "segment_create")!.prompt,
+          SUGGESTED_PROMPTS.find((p) => p.capability === "campaign_insight")!.prompt,
+        ],
       };
   }
 }
