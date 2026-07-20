@@ -2269,3 +2269,5 @@ export {
 } from "./whatsapp";
 
 export * from "./marketing-analytics";
+
+export * from "./subscriptions";
