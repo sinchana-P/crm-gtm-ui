@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { ViewSwitcher } from "@/components/layout/view-switcher";
+import { WorkspaceSwitcher } from "@/components/layout/workspace-switcher";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -38,6 +39,7 @@ export function AppHeader({ breadcrumbs }: AppHeaderProps) {
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
+      <WorkspaceSwitcher />
       <div className="min-w-0 flex-1">{breadcrumbs}</div>
 
       <div className="relative hidden w-full max-w-xs lg:block">

@@ -25,11 +25,16 @@ import type { ActivityItem, ContactRecord } from "@/lib/types";
 import {
   getActivitiesForContact,
   getContactById,
-  MOCK_CASES,
   MOCK_DOCUMENTS,
   MOCK_ENVELOPES,
   MOCK_LISTS,
 } from "@/lib/mock-data";
+import { useCaseManagerStore } from "@/lib/stores/case-manager-store";
+import { ConvertToCaseWizard } from "@/components/case-manager/convert-to-case-wizard";
+import {
+  CaseStatusBadge,
+  SlaBadge as CmSlaBadge,
+} from "@/components/case-manager/cm-status-badges";
 import {
   getRecordEntityLabel,
   getRecordListHref,
@@ -355,8 +360,20 @@ export function ContactRecordView({
   const isEsignEnabled = usePluginStore((s) => s.isEnabled("esign"));
   const isMarketingEnabled = usePluginStore((s) => s.isEnabled("marketing"));
 
+  const [caseWizardOpen, setCaseWizardOpen] = useState(false);
+  const allCmCases = useCaseManagerStore((s) => s.cases);
+  const contactEventsMap = useCaseManagerStore((s) => s.contactEvents);
+  const cmCases = useMemo(
+    () => allCmCases.filter((c) => c.clientIds.includes(contact.id)),
+    [allCmCases, contact.id]
+  );
+  const cmContactEvents = useMemo(
+    () => contactEventsMap[contact.id] ?? [],
+    [contactEventsMap, contact.id]
+  );
+
   const activities = getActivitiesForContact(contact.id);
-  const cases = MOCK_CASES.filter((c) => c.contactId === contact.id);
+  const cases = cmCases;
   const envelopes = MOCK_ENVELOPES.filter((e) => e.contactId === contact.id);
   const documents = MOCK_DOCUMENTS.filter((d) => d.contactId === contact.id);
 
@@ -364,6 +381,10 @@ export function ContactRecordView({
   const listHref = getRecordListHref(entityType);
 
   const handleQuickAction = (action: string) => {
+    if (action === "Case creation") {
+      setCaseWizardOpen(true);
+      return;
+    }
     if (action === "Request documents") {
       setDocRequestOpen(true);
       return;
@@ -661,23 +682,37 @@ export function ContactRecordView({
               {cases.map((caseRecord) => (
                 <li key={caseRecord.id} className="rounded-md border p-3">
                   <div className="flex items-start justify-between gap-2">
-                    <div>
+                    <div className="min-w-0">
                       <Link
-                        href="/cases/queue"
-                        className="text-sm font-medium hover:underline"
+                        href={`/cases/${caseRecord.id}`}
+                        className="font-mono text-xs text-muted-foreground hover:underline"
                       >
-                        {caseRecord.number}
+                        {caseRecord.displayId}
                       </Link>
-                      <p className="text-xs text-muted-foreground">
-                        {caseRecord.title}
-                      </p>
+                      <p className="truncate text-sm font-medium">{caseRecord.title}</p>
                     </div>
-                    <HealthBadge status={caseRecord.slaStatus} variant="sla" />
+                    <CmSlaBadge status={caseRecord.slaStatus} />
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <CaseStatusBadge status={caseRecord.status} />
+                    <span className="text-xs text-muted-foreground">{caseRecord.projectName}</span>
                   </div>
                 </li>
               ))}
             </ul>
           )}
+          {cmContactEvents.length > 0 ? (
+            <div className="mt-3 border-t pt-3">
+              <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+                Synced from Case Manager
+              </p>
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                {cmContactEvents.slice(0, 4).map((e) => (
+                  <li key={e.id}>• {e.title}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </AssociationPanel>
       ) : null}
 
@@ -804,6 +839,11 @@ export function ContactRecordView({
         contactId={contact.id}
         open={whatsappOpen}
         onOpenChange={setWhatsappOpen}
+      />
+      <ConvertToCaseWizard
+        open={caseWizardOpen}
+        onOpenChange={setCaseWizardOpen}
+        contactId={contact.id}
       />
     </>
   );

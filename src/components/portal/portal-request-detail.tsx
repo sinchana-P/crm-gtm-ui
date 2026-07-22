@@ -10,10 +10,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { getPortalRequest } from "@/lib/mock-data/portal";
 import { formatDateTime, formatRelative } from "@/lib/format";
+import { useCaseManagerStore } from "@/lib/stores/case-manager-store";
+import { CheckCircle2 } from "lucide-react";
 
 export function PortalRequestDetail({ id }: { id: string }) {
   const request = getPortalRequest(id);
   const [infoOpen, setInfoOpen] = useState(false);
+  const portalOverride = useCaseManagerStore((s) =>
+    request ? s.portalOverrides[request.number] : undefined
+  );
+  const linkedCase = useCaseManagerStore((s) =>
+    request ? s.cases.find((c) => c.sourceRef === request.number) : undefined
+  );
 
   if (!request) {
     return (
@@ -24,7 +32,10 @@ export function PortalRequestDetail({ id }: { id: string }) {
     );
   }
 
+  const effectiveStatus = portalOverride ?? request.status;
+  const resolvedViaCase = portalOverride === "resolved";
   const needsResponse =
+    !resolvedViaCase &&
     request.requiredFields &&
     request.requiredFields.length > 0 &&
     (request.status === "open" || request.status === "pending");
@@ -41,7 +52,7 @@ export function PortalRequestDetail({ id }: { id: string }) {
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">{request.title}</h1>
             <Badge variant="outline" className="font-mono">{request.number}</Badge>
-            <Badge className="capitalize">{request.status}</Badge>
+            <Badge className="capitalize">{effectiveStatus}</Badge>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">{request.description}</p>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -50,6 +61,30 @@ export function PortalRequestDetail({ id }: { id: string }) {
         </div>
         {needsResponse ? <Button onClick={() => setInfoOpen(true)}>Respond to request</Button> : null}
       </div>
+
+      {resolvedViaCase ? (
+        <Card className="border-emerald-500/30 bg-emerald-500/5 shadow-none">
+          <CardContent className="flex items-center gap-3 py-4">
+            <CheckCircle2 className="size-5 text-emerald-600" />
+            <div>
+              <p className="text-sm font-medium">Your request has been resolved</p>
+              <p className="text-sm text-muted-foreground">
+                Our team has completed the work. A short feedback survey is on its way — thank you!
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : linkedCase ? (
+        <Card className="border-primary/20 bg-muted/20 shadow-none">
+          <CardContent className="flex items-center gap-3 py-3">
+            <span className="size-2 rounded-full bg-primary" />
+            <p className="text-sm text-muted-foreground">
+              Your request is being handled by our team — current status:{" "}
+              <span className="font-medium capitalize text-foreground">{linkedCase.status}</span>.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {needsResponse ? (
         <Card className="border-primary/30 bg-muted/30 shadow-none">

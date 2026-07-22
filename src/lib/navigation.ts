@@ -69,10 +69,14 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { id: "deliverability", label: "Deliverability", href: "/marketing/deliverability", icon: "ShieldCheck", section: "marketing", plugin: "marketing" },
 
-  // Cases plugin
-  { id: "cases", label: "Cases", href: "/cases", icon: "LifeBuoy", section: "cases", plugin: "cases" },
-  { id: "case-queue", label: "Open Cases Queue", href: "/cases/queue", icon: "AlarmClock", section: "cases", plugin: "cases" },
-  { id: "case-templates", label: "Case Templates", href: "/cases/templates", icon: "FileStack", section: "cases", plugin: "cases" },
+  // Case Manager plugin — back-office integration (front office ↔ back office)
+  { id: "cm-command", label: "Command Center", href: "/cases", icon: "LayoutDashboard", section: "cases", plugin: "cases" },
+  { id: "cm-intake", label: "Intake & Triage", href: "/cases/intake", icon: "Inbox", section: "cases", plugin: "cases", badge: "3" },
+  { id: "cm-cases", label: "Cases", href: "/cases/list", icon: "LifeBuoy", section: "cases", plugin: "cases" },
+  { id: "cm-projects", label: "Projects", href: "/cases/projects", icon: "FolderKanban", section: "cases", plugin: "cases" },
+  { id: "cm-automations", label: "Automations & Routing", href: "/cases/automations", icon: "Workflow", section: "cases", plugin: "cases" },
+  { id: "cm-templates", label: "Case Templates", href: "/cases/templates", icon: "FileStack", section: "cases", plugin: "cases" },
+  { id: "cm-analytics", label: "Analytics", href: "/cases/analytics", icon: "BarChart3", section: "cases", plugin: "cases" },
 
   // E-sign plugin
   { id: "esign", label: "E-sign", href: "/esign", icon: "PenLine", section: "esign", plugin: "esign" },
@@ -109,7 +113,7 @@ export const NAV_ITEMS: NavItem[] = [
 const SECTION_LABELS: Record<string, string> = {
   core: "Contacts",
   marketing: "Marketing",
-  cases: "Cases",
+  cases: "Case Manager",
   esign: "E-sign",
   settings: "Settings",
 };

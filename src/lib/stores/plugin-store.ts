@@ -21,7 +21,7 @@ export const PLUGINS: PluginMeta[] = [
   {
     id: "cases",
     name: "Case Manager",
-    description: "Front-office case intake with Kaayaka back-office resolution.",
+    description: "Front-office intake wired to back-office case resolution, with two-way 360° sync.",
     sku: "Connect Resolve",
   },
   {

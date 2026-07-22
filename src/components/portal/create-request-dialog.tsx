@@ -20,24 +20,48 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useCaseManagerStore } from "@/lib/stores/case-manager-store";
+import { PORTAL_CUSTOMER } from "@/lib/mock-data/portal";
 
 interface CreateRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+const TYPE_LABEL: Record<string, string> = {
+  support: "Technical support",
+  billing: "Billing",
+  account: "Account",
+  other: "Other",
+};
+
 export function CreateRequestDialog({ open, onOpenChange }: CreateRequestDialogProps) {
   const [title, setTitle] = useState("");
   const [type, setType] = useState("support");
+  const [description, setDescription] = useState("");
+  const addIntakeFromPortal = useCaseManagerStore((s) => s.addIntakeFromPortal);
 
   const handleSubmit = () => {
     if (!title.trim()) {
       toast.error("Please enter a subject");
       return;
     }
-    toast.success("Request submitted — your rep will respond shortly");
+    const ref = `CM-${1060 + Math.floor(Math.random() * 900)}`;
+    addIntakeFromPortal({
+      subject: title.trim(),
+      body: description.trim() || `${TYPE_LABEL[type]} request`,
+      contactId: PORTAL_CUSTOMER.id,
+      submitterName: `${PORTAL_CUSTOMER.firstName} ${PORTAL_CUSTOMER.lastName}`,
+      submitterEmail: PORTAL_CUSTOMER.email,
+      priority: "medium",
+      sourceRef: ref,
+    });
+    toast.success(`Request ${ref} submitted`, {
+      description: "Your rep will respond shortly — track it under My requests.",
+    });
     setTitle("");
     setType("support");
+    setDescription("");
     onOpenChange(false);
   };
 
@@ -66,7 +90,12 @@ export function CreateRequestDialog({ open, onOpenChange }: CreateRequestDialogP
           </div>
           <div className="grid gap-2">
             <Label>Description</Label>
-            <Textarea rows={4} placeholder="Describe what you need..." />
+            <Textarea
+              rows={4}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe what you need..."
+            />
           </div>
         </div>
         <DialogFooter>
