@@ -128,21 +128,144 @@ export interface UtmParameters {
   content?: string;
 }
 
+/* ── A/B testing ───────────────────────────────────────────────────────── */
+
+/** The single element that differs between variants. One per test. */
+export type AbTestedVariable = "subject_line" | "content" | "sender_name";
+
+/**
+ * HubSpot runs two distinct A/B engines and we mirror both:
+ *
+ * - `sample_and_rollout` — marketing (one-off) email. A percentage of the list
+ *   receives the test; the remainder is automatically sent the winner.
+ * - `permanent_5050` — automated/workflow email. Contacts are split 50/50 as
+ *   they enrol, gradually rather than all at once, because there is no fixed
+ *   list to slice. There is no remainder to roll out to, so the marketer picks
+ *   a winner and the workflow sends only that version from then on; the losing
+ *   version is archived.
+ */
+export type AbSplitMode = "sample_and_rollout" | "permanent_5050";
+
+/**
+ * HubSpot's "Winning metric" dropdown offers exactly these three. `click_rate`
+ * is clicks over delivered; `click_through_rate` is clicks over opens.
+ */
+export type AbWinnerMetric = "open_rate" | "click_rate" | "click_through_rate";
+
+/** Who decides, and whether a follow-up send happens at all. */
+export type AbWinnerMode = "auto" | "manual" | "measure_only";
+
+/**
+ * HubSpot exposes a "Fallback version" dropdown rather than a policy choice:
+ * you nominate which version sends if the result comes back inconclusive.
+ */
+export type AbNoWinnerAction = "send_control" | "send_best_anyway" | "do_not_send";
+
+export type AbInconclusiveReason =
+  | "no_significance"
+  | "effectively_tied"
+  | "insufficient_sample"
+  | "no_data"
+  /** The observed split diverged from the configured one — groups aren't comparable. */
+  | "assignment_skew";
+
+export type AbTestStatus =
+  | "draft"
+  | "scheduled"
+  | "running"
+  | "evaluating"
+  | "awaiting_decision"
+  | "winner_selected"
+  | "inconclusive"
+  | "rolled_out"
+  | "completed"
+  | "stopped";
+
+/** Which cohort a set of results belongs to. Never pooled. */
+export type AbCohort = "test" | "rollout";
+
 export interface AbTestVariant {
   id: string;
+  /** Positional identity — "Version A". Not user-editable. */
   label: string;
+  /** Marketer-supplied name, as in HubSpot's version-naming step. */
+  name?: string;
+  /** Set once a winner is chosen in a permanent-split test. */
+  archived?: boolean;
+  /* ── the email this version actually sends ───────────────────────────
+   * Each version owns a full copy of its content. It deliberately does NOT
+   * reference a shared template: editing "Version B" must never mutate a
+   * template other campaigns are using, and the two versions have to be able
+   * to diverge freely. HubSpot works the same way — you edit both versions of
+   * the email, switching between them in the editor.
+   */
+  /** Recipient-visible subject line. */
   subject: string;
+  /** Inbox preview text. */
+  preheader?: string;
+  /** Display name on the "from" line. */
+  senderName?: string;
+  /** The email body. Seeded from the campaign template, then edited freely. */
+  blocks?: EmailBlock[];
+  /** Provenance only — which template this version was seeded from. */
+  templateId?: string;
+  templateName?: string;
+  isControl?: boolean;
+  /** Share of the test cohort, 0-100. Sums to 100 across variants. */
+  weight?: number;
+  assigned?: number;
   sent: number;
+  delivered?: number;
   opened: number;
   clicked: number;
+  converted?: number;
+  bounced?: number;
+  unsubscribed?: number;
   winner?: boolean;
+}
+
+/** One pairwise significance test: the leader against one other variant. */
+export interface AbComparison {
+  leaderId: string;
+  againstId: string;
+  rawPValue: number;
+  adjustedPValue: number;
+  significant: boolean;
 }
 
 export interface AbTestConfig {
   enabled: boolean;
-  winnerCriteria: "open_rate" | "click_rate";
-  /** Percentage of audience used for the test send. */
+  status?: AbTestStatus;
+  testedVariable?: AbTestedVariable;
+  splitMode?: AbSplitMode;
+  /** Percentage of the audience entering the test cohort. */
   samplePercent: number;
+  /** @deprecated superseded by `primaryMetric` — retained for older records. */
+  winnerCriteria: "open_rate" | "click_rate";
+  primaryMetric?: AbWinnerMetric;
+  winnerMode?: AbWinnerMode;
+  confidenceThreshold?: number;
+  minSamplePerVariant?: number;
+  testWindowHours?: number;
+  /** Epoch ms. Set when the test cohort is dispatched. */
+  dispatchedAt?: number;
+  /** Epoch ms. The single decision point. */
+  evaluateAt?: number;
+  evaluatedAt?: number;
+  extensionCount?: number;
+  onNoWinner?: AbNoWinnerAction;
+  /** Version sent when the test is inconclusive — HubSpot's "Fallback version". */
+  fallbackVariantId?: string;
+  winningVariantId?: string;
+  winnerIsSignificant?: boolean;
+  winnerConfidence?: number;
+  winnerSelectedBy?: string;
+  inconclusiveReason?: AbInconclusiveReason;
+  comparisons?: AbComparison[];
+  /** Recipients held back for the winner send. */
+  rolloutSize?: number;
+  rolloutSentAt?: number;
+  stoppedReason?: string;
   variants: AbTestVariant[];
 }
 

@@ -10,7 +10,8 @@ import {
   StretchVertical,
   Type,
 } from "lucide-react";
-import type { EmailBlockType, EmailTemplate } from "@/lib/types";
+import type { EmailBlock, EmailBlockType, EmailTemplate } from "@/lib/types";
+import { createBlockId } from "@/lib/stores/email-template-store";
 import { Badge } from "@/components/ui/badge";
 import { PERSONALIZATION_TOKENS } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -77,3 +78,58 @@ export function rate(value: number, base: number) {
 }
 
 export { PERSONALIZATION_TOKENS };
+
+/** The block types offered in the insert palette, in display order. */
+export const BLOCK_PALETTE: EmailBlockType[] = [
+  "heading",
+  "text",
+  "image",
+  "button",
+  "columns",
+  "divider",
+  "spacer",
+  "social",
+  "dynamic",
+  "html",
+];
+
+/** A new block of the given type, with sensible starting content. */
+export function makeBlock(type: EmailBlockType): EmailBlock {
+  const id = createBlockId();
+  switch (type) {
+    case "heading":
+      return { id, type, text: "Your heading", level: 1, align: "left" };
+    case "text":
+      return { id, type, text: "Write your message here.", align: "left" };
+    case "image":
+      return { id, type, src: "", alt: "", align: "center" };
+    case "button":
+      return { id, type, text: "Click here", url: "", align: "center", buttonColor: "#2563eb" };
+    case "spacer":
+      return { id, type, height: 24 };
+    case "social":
+      return { id, type, socials: ["twitter", "linkedin"], align: "center" };
+    case "columns":
+      return { id, type, colText: ["Column one", "Column two"] };
+    case "html":
+      return { id, type, html: "" };
+    case "dynamic":
+      return { id, type, dynamicVariants: [{ id: `${id}-d1`, label: "Default", text: "Default content" }] };
+    default:
+      return { id, type };
+  }
+}
+
+/**
+ * Deep-copies blocks with fresh ids. Needed whenever one email's content seeds
+ * another — sharing block ids across two versions would make them alias.
+ */
+export function cloneBlocks(blocks: EmailBlock[]): EmailBlock[] {
+  return blocks.map((b) => ({
+    ...b,
+    id: createBlockId(),
+    socials: b.socials ? [...b.socials] : undefined,
+    colText: b.colText ? [...b.colText] : undefined,
+    dynamicVariants: b.dynamicVariants?.map((d, i) => ({ ...d, id: `${createBlockId()}-${i}` })),
+  }));
+}

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type {
+  AbTestConfig,
   Campaign,
   CampaignGoal,
   CampaignGoalMetric,
@@ -21,7 +22,6 @@ import type {
   ConversionTarget,
   UtmParameters,
 } from "@/lib/types";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -55,15 +55,25 @@ import {
   GOAL_METRIC_LABELS,
   buildUtmUrl,
 } from "@/components/marketing/campaigns/campaign-shared";
+import {
+  AbTestConfigPanel,
+  changedFields,
+  emptyAbConfig,
+  validateAbConfig,
+} from "@/components/marketing/campaigns/ab-test/ab-test-config-panel";
+import { WINNER_METRIC_LABELS } from "@/lib/ab-testing";
 
-const STEPS = [
+const BASE_STEPS = [
   "Details",
   "Audience",
   "Content",
+  "A/B test",
   "Goals & tracking",
   "Schedule",
   "Review",
 ] as const;
+
+type StepName = (typeof BASE_STEPS)[number];
 
 const CRON_PRESETS: Record<CampaignRecurrence["frequency"], string> = {
   daily: "0 9 * * *",
@@ -80,10 +90,7 @@ interface WizardState {
   segmentId: string;
   templateId: string;
   abEnabled: boolean;
-  abSubjectA: string;
-  abSubjectB: string;
-  abWinnerCriteria: "open_rate" | "click_rate";
-  abSamplePercent: number;
+  abConfig: AbTestConfig | null;
   goals: { metric: CampaignGoalMetric; target: string }[];
   conversionTargets: { type: ConversionTarget["type"]; ref: string; url: string }[];
   utmEnabled: boolean;
@@ -104,10 +111,7 @@ const INITIAL_STATE: WizardState = {
   segmentId: "",
   templateId: "",
   abEnabled: false,
-  abSubjectA: "",
-  abSubjectB: "",
-  abWinnerCriteria: "open_rate",
-  abSamplePercent: 20,
+  abConfig: null,
   goals: [{ metric: "opens", target: "" }],
   conversionTargets: [],
   utmEnabled: false,
@@ -137,11 +141,29 @@ export function CreateCampaignWizard({
   const segment = segments.find((l) => l.id === state.segmentId);
   const template = MOCK_EMAIL_TEMPLATES.find((t) => t.id === state.templateId);
 
+  // A/B testing is email-only in V1, so the step disappears for WhatsApp.
+  const steps = useMemo<StepName[]>(
+    () => BASE_STEPS.filter((s) => s !== "A/B test" || state.channel === "email"),
+    [state.channel]
+  );
+  const currentStep = steps[Math.min(step, steps.length - 1)];
+
+  const audienceSize = segment?.memberCount ?? 12_480;
+
+  const abValidation = useMemo(
+    () =>
+      state.abEnabled && state.abConfig
+        ? validateAbConfig(state.abConfig, audienceSize)
+        : { errors: [], warnings: [], valid: true },
+    [state.abEnabled, state.abConfig, audienceSize]
+  );
+
   const canNext = useMemo(() => {
-    if (step === 0) return state.name.trim().length > 0;
-    if (step === 1) return !!state.segmentId;
+    if (currentStep === "Details") return state.name.trim().length > 0;
+    if (currentStep === "Audience") return !!state.segmentId;
+    if (currentStep === "A/B test") return abValidation.valid;
     return true;
-  }, [step, state]);
+  }, [currentStep, state.name, state.segmentId, abValidation.valid]);
 
   function close() {
     onOpenChange(false);
@@ -189,17 +211,14 @@ export function CreateCampaignWizard({
       utm: state.utmEnabled
         ? { ...state.utm, campaign: state.utm.campaign || slugify(state.name) }
         : undefined,
-      abTest: state.abEnabled
-        ? {
-            enabled: true,
-            winnerCriteria: state.abWinnerCriteria,
-            samplePercent: state.abSamplePercent,
-            variants: [
-              { id: "va", label: "Variant A", subject: state.abSubjectA || template?.subject || "Subject A", sent: 0, opened: 0, clicked: 0 },
-              { id: "vb", label: "Variant B", subject: state.abSubjectB || "Subject B", sent: 0, opened: 0, clicked: 0 },
-            ],
-          }
-        : undefined,
+      abTest:
+        state.abEnabled && state.abConfig
+          ? {
+              ...state.abConfig,
+              enabled: true,
+              status: asDraft ? "draft" : "scheduled",
+            }
+          : undefined,
       recurrence: recurring
         ? {
             frequency: state.frequency,
@@ -234,12 +253,12 @@ export function CreateCampaignWizard({
         <DialogHeader>
           <DialogTitle>Create campaign</DialogTitle>
           <DialogDescription>
-            Step {step + 1} of {STEPS.length} — {STEPS[step]}
+            Step {step + 1} of {steps.length} — {currentStep}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex items-center gap-1.5">
-          {STEPS.map((label, i) => (
+          {steps.map((label, i) => (
             <div
               key={label}
               className={cn(
@@ -251,22 +270,22 @@ export function CreateCampaignWizard({
         </div>
 
         <div className="max-h-[55vh] space-y-5 overflow-y-auto py-2 pr-1">
-          {step === 0 && (
-            <DetailsStep state={state} patch={patch} />
+          {currentStep === "Details" && <DetailsStep state={state} patch={patch} />}
+          {currentStep === "Audience" && <AudienceStep state={state} patch={patch} />}
+          {currentStep === "Content" && <ContentStep state={state} patch={patch} />}
+          {currentStep === "A/B test" && (
+            <AbTestStep
+              state={state}
+              patch={patch}
+              audienceSize={audienceSize}
+              campaignSubject={template?.subject ?? ""}
+              templateId={state.templateId}
+              templateName={template?.name}
+            />
           )}
-          {step === 1 && (
-            <AudienceStep state={state} patch={patch} />
-          )}
-          {step === 2 && (
-            <ContentStep state={state} patch={patch} />
-          )}
-          {step === 3 && (
-            <GoalsTrackingStep state={state} patch={patch} />
-          )}
-          {step === 4 && (
-            <ScheduleStep state={state} patch={patch} />
-          )}
-          {step === 5 && (
+          {currentStep === "Goals & tracking" && <GoalsTrackingStep state={state} patch={patch} />}
+          {currentStep === "Schedule" && <ScheduleStep state={state} patch={patch} />}
+          {currentStep === "Review" && (
             <ReviewStep state={state} segmentName={segment?.name} templateName={template?.name} />
           )}
         </div>
@@ -281,7 +300,7 @@ export function CreateCampaignWizard({
                 Back
               </Button>
             )}
-            {step < STEPS.length - 1 ? (
+            {step < steps.length - 1 ? (
               <Button disabled={!canNext} onClick={() => setStep((s) => s + 1)}>
                 Continue
               </Button>
@@ -487,78 +506,79 @@ function ContentStep({ state, patch }: StepProps) {
         )}
       </div>
 
-      <Separator />
+    </div>
+  );
+}
 
-      <div className="flex items-center justify-between rounded-lg border p-3">
+function AbTestStep({
+  state,
+  patch,
+  audienceSize,
+  campaignSubject,
+  templateId,
+  templateName,
+}: StepProps & {
+  audienceSize: number;
+  campaignSubject: string;
+  templateId: string;
+  templateName?: string;
+}) {
+  const config = state.abConfig;
+
+  function toggle(on: boolean) {
+    if (!on) {
+      patch({ abEnabled: false });
+      return;
+    }
+    patch({
+      abEnabled: true,
+      abConfig:
+        config ??
+        emptyAbConfig(campaignSubject, state.type, templateId || undefined, templateName),
+    });
+  }
+
+  // A split needs enough people on both sides to mean anything, and there must
+  // be an email to duplicate — a test never starts from a blank canvas.
+  const tooSmall = audienceSize < 100;
+  const noTemplate = !templateId;
+  const blocked = tooSmall || noTemplate;
+
+  return (
+    <div className="grid gap-4">
+      <div className="flex items-start justify-between gap-4 rounded-lg border p-3">
         <div>
           <p className="flex items-center gap-2 text-sm font-medium">
             <FlaskConical className="size-4 text-muted-foreground" />
-            A/B subject line testing
-            <Badge variant="outline" className="border-0 bg-violet-500/10 text-violet-700 dark:text-violet-400">
-              Phase 2
-            </Badge>
+            Run an A/B test on this campaign
           </p>
-          <p className="text-xs text-muted-foreground">
-            Test two subject lines and auto-select the winner by engagement.
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {noTemplate
+              ? "Choose a template in the Content step first — both versions start as a copy of it."
+              : tooSmall
+                ? `This segment has ${audienceSize.toLocaleString()} contacts — too small to split meaningfully.`
+                : `Both versions start as a copy of “${templateName ?? "your email"}”. Send them to part of your audience, then send the winner to everyone else.`}
           </p>
         </div>
         <Switch
           checked={state.abEnabled}
-          onCheckedChange={(v) => patch({ abEnabled: v })}
+          disabled={blocked}
+          onCheckedChange={toggle}
         />
       </div>
 
-      {state.abEnabled && (
-        <div className="grid gap-3 rounded-lg border p-3">
-          <div className="grid gap-2">
-            <Label htmlFor="cw-sub-a">Subject A</Label>
-            <Input
-              id="cw-sub-a"
-              value={state.abSubjectA}
-              onChange={(e) => patch({ abSubjectA: e.target.value })}
-              placeholder={template?.subject ?? "Subject line A"}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="cw-sub-b">Subject B</Label>
-            <Input
-              id="cw-sub-b"
-              value={state.abSubjectB}
-              onChange={(e) => patch({ abSubjectB: e.target.value })}
-              placeholder="Subject line B"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-2">
-              <Label>Winner criteria</Label>
-              <Select
-                value={state.abWinnerCriteria}
-                onValueChange={(v) =>
-                  patch({ abWinnerCriteria: (v as WizardState["abWinnerCriteria"]) ?? "open_rate" })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="open_rate">Highest open rate</SelectItem>
-                  <SelectItem value="click_rate">Highest click rate</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="cw-sample">Test sample (%)</Label>
-              <Input
-                id="cw-sample"
-                type="number"
-                min={5}
-                max={50}
-                value={state.abSamplePercent}
-                onChange={(e) => patch({ abSamplePercent: Number(e.target.value) || 20 })}
-              />
-            </div>
-          </div>
-        </div>
+      {state.abEnabled && config ? (
+        <AbTestConfigPanel
+          config={config}
+          onChange={(p) => patch({ abConfig: { ...config, ...p } })}
+          audienceSize={audienceSize}
+          campaignType={state.type}
+        />
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Skip this and the campaign sends one version to the whole audience — you can still add a
+          test later while it&apos;s a draft.
+        </p>
       )}
     </div>
   );
@@ -905,7 +925,19 @@ function ReviewStep({
     ],
     ["Conversion targets", String(state.conversionTargets.filter((t) => t.ref || t.url).length)],
     ["UTM tracking", state.utmEnabled ? "Enabled" : "Off"],
-    ["A/B subject test", state.abEnabled ? `Enabled (${state.abSamplePercent}% sample)` : "Off"],
+    [
+      "A/B test",
+      state.abEnabled && state.abConfig
+        ? [
+            changedFields(state.abConfig.variants).join(" + ") || "no differences yet",
+            state.abConfig.splitMode === "permanent_5050"
+              ? "50/50 as contacts enrol"
+              : `${state.abConfig.samplePercent}% tested`,
+            `winner by ${WINNER_METRIC_LABELS[state.abConfig.primaryMetric ?? "open_rate"].toLowerCase()}`,
+            `${state.abConfig.testWindowHours ?? 4}h test length`,
+          ].join(" · ")
+        : "Off",
+    ],
     [
       "Schedule",
       state.type === "recurring"

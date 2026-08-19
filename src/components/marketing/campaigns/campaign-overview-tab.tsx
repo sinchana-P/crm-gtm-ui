@@ -19,7 +19,6 @@ import {
   MousePointerClick,
   Send,
   Target,
-  UserMinus,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Campaign } from "@/lib/types";
@@ -38,6 +37,8 @@ import {
   buildUtmUrl,
   rate,
 } from "@/components/marketing/campaigns/campaign-shared";
+import { AbStatusBadge } from "@/components/marketing/campaigns/ab-test/ab-test-shared";
+import { WINNER_METRIC_LABELS } from "@/lib/ab-testing";
 
 const trendConfig = {
   opened: { label: "Opened", color: "var(--chart-1)" },
@@ -50,6 +51,7 @@ const funnelConfig = {
 } satisfies ChartConfig;
 
 export function CampaignOverviewTab({ campaign }: { campaign: Campaign }) {
+  const winnerVariant = campaign.abTest?.variants.find((v) => v.winner);
   const daily = useMemo(
     () =>
       MOCK_CAMPAIGN_DAILY_STATS.filter((d) => d.campaignId === campaign.id).map((d) => ({
@@ -246,62 +248,37 @@ export function CampaignOverviewTab({ campaign }: { campaign: Campaign }) {
       {campaign.abTest?.enabled && (
         <Card className="shadow-none">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex flex-wrap items-center gap-2 text-base">
               <FlaskConical className="size-4 text-muted-foreground" />
-              A/B subject line test
-              <span className="text-xs font-normal text-muted-foreground">
-                Winner by{" "}
-                {campaign.abTest.winnerCriteria === "open_rate" ? "open rate" : "click rate"} ·{" "}
-                {campaign.abTest.samplePercent}% sample
-              </span>
+              A/B test
+              <AbStatusBadge status={campaign.abTest.status ?? "draft"} />
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {campaign.abTest.variants.map((v) => (
-                <div
-                  key={v.id}
-                  className={`rounded-lg border p-4 ${v.winner ? "border-emerald-500/50 bg-emerald-500/5" : ""}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">{v.label}</p>
-                    {v.winner && (
-                      <Badge
-                        variant="outline"
-                        className="border-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                      >
-                        Winner
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">“{v.subject}”</p>
-                  <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-                    <div>
-                      <p className="font-semibold tabular-nums">{v.sent.toLocaleString()}</p>
-                      <p className="text-muted-foreground">Sent</p>
-                    </div>
-                    <div>
-                      <p className="font-semibold tabular-nums">{rate(v.opened, v.sent)}%</p>
-                      <p className="text-muted-foreground">Open rate</p>
-                    </div>
-                    <div>
-                      <p className="font-semibold tabular-nums">{rate(v.clicked, v.sent)}%</p>
-                      <p className="text-muted-foreground">Click rate</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 flex items-center gap-1.5">
-              <UserMinus className="size-3.5 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">
-                {campaign.unsubscribed.toLocaleString()} unsubscribed ·{" "}
-                {campaign.bounced.toLocaleString()} bounced across both variants.
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {campaign.abTest.splitMode === "permanent_5050"
+                ? "Split 50/50 as contacts enrol"
+                : `${campaign.abTest.samplePercent}% of the audience tested, remainder gets the winner`}{" "}
+              · winner by{" "}
+              {WINNER_METRIC_LABELS[campaign.abTest.primaryMetric ?? "open_rate"].toLowerCase()}.
+            </p>
+            {winnerVariant && (
+              <p className="text-sm">
+                <span className="font-medium">{winnerVariant.label}</span> is ahead
+                {campaign.abTest.winnerConfidence
+                  ? ` at ${Math.round(campaign.abTest.winnerConfidence * 100)}% confidence`
+                  : ""}
+                .
               </p>
-            </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Full per-version results, confidence and winner controls live on the{" "}
+              <span className="font-medium text-foreground">A/B test</span> tab.
+            </p>
           </CardContent>
         </Card>
       )}
+
     </div>
   );
 }

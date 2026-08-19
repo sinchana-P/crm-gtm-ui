@@ -53,51 +53,14 @@ import { EmailBlockConfig } from "@/components/marketing/email/email-block-confi
 import { EmailBlockRender } from "@/components/marketing/email/email-block-render";
 import {
   BLOCK_META,
+  BLOCK_PALETTE as PALETTE,
+  makeBlock,
   EmailStatusBadge,
   PERSONALIZATION_TOKENS,
 } from "@/components/marketing/email/email-shared";
 import { TestSendDialog } from "@/components/marketing/email/test-send-dialog";
 import { AiAssistDrawer } from "@/components/marketing/ai-email/ai-assist-drawer";
 import type { AiDraftSection } from "@/lib/types";
-
-const PALETTE: EmailBlockType[] = [
-  "heading",
-  "text",
-  "image",
-  "button",
-  "columns",
-  "divider",
-  "spacer",
-  "social",
-  "dynamic",
-  "html",
-];
-
-function makeBlock(type: EmailBlockType): EmailBlock {
-  const id = createBlockId();
-  switch (type) {
-    case "heading":
-      return { id, type, text: "Your heading", level: 1, align: "left" };
-    case "text":
-      return { id, type, text: "Write your message here.", align: "left" };
-    case "image":
-      return { id, type, src: "", alt: "", align: "center" };
-    case "button":
-      return { id, type, text: "Click here", url: "", align: "center", buttonColor: "#2563eb" };
-    case "spacer":
-      return { id, type, height: 24 };
-    case "social":
-      return { id, type, socials: ["twitter", "linkedin"], align: "center" };
-    case "columns":
-      return { id, type, colText: ["Column one", "Column two"] };
-    case "html":
-      return { id, type, html: "" };
-    case "dynamic":
-      return { id, type, dynamicVariants: [{ id: `${id}-d1`, label: "Default", text: "Default content" }] };
-    default:
-      return { id, type };
-  }
-}
 
 export function EmailEditor({
   templateId,

@@ -28,6 +28,8 @@ import {
 import { CampaignOverviewTab } from "@/components/marketing/campaigns/campaign-overview-tab";
 import { CampaignRecipientsTab } from "@/components/marketing/campaigns/campaign-recipients-tab";
 import { CampaignSetupTab } from "@/components/marketing/campaigns/campaign-setup-tab";
+import { AbTestTab, canAddAbTest } from "@/components/marketing/campaigns/ab-test/ab-test-tab";
+import { AbStatusBadge } from "@/components/marketing/campaigns/ab-test/ab-test-shared";
 
 const LIFECYCLE_STEPS: { status: CampaignStatus; label: string }[] = [
   { status: "draft", label: "Draft" },
@@ -54,7 +56,9 @@ export function CampaignDetail({
   const setStatus = useCampaignStore((s) => s.setStatus);
   const setArchived = useCampaignStore((s) => s.setArchived);
   const [tab, setTab] = useState(
-    initialTab === "setup" || initialTab === "recipients" ? initialTab : "overview"
+    initialTab === "setup" || initialTab === "recipients" || initialTab === "ab-test"
+      ? initialTab
+      : "overview"
   );
 
   if (!campaign) {
@@ -79,6 +83,12 @@ export function CampaignDetail({
 
   const current = stepIndex(campaign.status);
 
+  // The tab doubles as the entry point for adding a test, so it shows for any
+  // email campaign that hasn't sent yet — not only ones already carrying one.
+  const showAbTab =
+    !!campaign.abTest?.enabled ||
+    (campaign.channel === "email" && canAddAbTest(campaign));
+
   return (
     <div className="space-y-6">
       <div className="space-y-4 border-b border-border pb-6">
@@ -98,6 +108,9 @@ export function CampaignDetail({
               <h1 className="text-2xl font-semibold tracking-tight">{campaign.name}</h1>
               <CampaignStatusBadge status={campaign.status} />
               <CampaignTypeBadge type={campaign.type} />
+              {campaign.abTest?.enabled && (
+                <AbStatusBadge status={campaign.abTest.status ?? "draft"} prefixed />
+              )}
               {campaign.archived && (
                 <span className="text-xs font-medium text-muted-foreground">(Archived)</span>
               )}
@@ -223,6 +236,7 @@ export function CampaignDetail({
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="recipients">Recipients</TabsTrigger>
+          {showAbTab && <TabsTrigger value="ab-test">A/B test</TabsTrigger>}
           <TabsTrigger value="setup">Setup</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="mt-6">
@@ -230,6 +244,9 @@ export function CampaignDetail({
         </TabsContent>
         <TabsContent value="recipients" className="mt-6">
           <CampaignRecipientsTab campaign={campaign} />
+        </TabsContent>
+        <TabsContent value="ab-test" className="mt-6">
+          <AbTestTab campaign={campaign} />
         </TabsContent>
         <TabsContent value="setup" className="mt-6">
           <CampaignSetupTab campaign={campaign} />
