@@ -37,6 +37,7 @@ export const NAV_ITEMS: NavItem[] = [
       { id: "campaigns", label: "Campaigns", href: "/marketing/campaigns", icon: "Mail", section: "marketing", plugin: "marketing" },
       { id: "automations", label: "Automations", href: "/marketing/automations", icon: "Workflow", section: "marketing", plugin: "marketing" },
       { id: "sequences", label: "Sequences", href: "/marketing/sequences", icon: "Waypoints", section: "marketing", plugin: "marketing" },
+      { id: "enrollments", label: "Enrollments", href: "/marketing/enrollments", icon: "UsersRound", section: "marketing", plugin: "marketing" },
     ],
   },
   {

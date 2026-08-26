@@ -315,7 +315,7 @@ export function CaseDetail({ caseId, backHref }: { caseId: string; backHref: str
                         </div>
                         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
                           <Meta label="Owner" value={contact.owner} />
-                          <Meta label="Territory" value={contact.territory} />
+                          <Meta label="Territory" value={contact.territory ?? "—"} />
                           <Meta label="Health" value={`${contact.healthScore ?? "—"}`} />
                           <Meta label="Lead score" value={`${contact.leadScore ?? "—"}`} />
                         </dl>

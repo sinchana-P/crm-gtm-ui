@@ -173,7 +173,7 @@ export default function CasesListPage() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={projectId} onValueChange={setProjectId}>
+          <Select value={projectId} onValueChange={(v) => setProjectId(v ?? "all")}>
             <SelectTrigger className="h-8 w-40"><SelectValue placeholder="Project" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All projects</SelectItem>

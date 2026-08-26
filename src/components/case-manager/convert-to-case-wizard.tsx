@@ -276,7 +276,7 @@ export function ConvertToCaseWizard({
                     </p>
                   </div>
                 ) : (
-                  <Select value={selectedContactId} onValueChange={setSelectedContactId}>
+                  <Select value={selectedContactId} onValueChange={(v) => setSelectedContactId(v ?? "")}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select contact">
                         {(value: string) => {
@@ -338,7 +338,7 @@ export function ConvertToCaseWizard({
                 </div>
                 <div className="space-y-2">
                   <Label>Queue</Label>
-                  <Select value={queueId} onValueChange={setQueueId}>
+                  <Select value={queueId} onValueChange={(v) => setQueueId(v ?? "")}>
                     <SelectTrigger>
                       <SelectValue placeholder="Queue" />
                     </SelectTrigger>
@@ -353,7 +353,7 @@ export function ConvertToCaseWizard({
                 </div>
                 <div className="space-y-2">
                   <Label>Assignee</Label>
-                  <Select value={assignee} onValueChange={setAssignee}>
+                  <Select value={assignee} onValueChange={(v) => setAssignee(v ?? "")}>
                     <SelectTrigger>
                       <SelectValue placeholder="Assignee" />
                     </SelectTrigger>
