@@ -44,6 +44,7 @@ import { usePluginStore } from "@/lib/stores/plugin-store";
 import { getNavIcon } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { AiRecordBrief } from "@/components/contacts/ai-record-brief";
+import { ContactConsentTab } from "@/components/contacts/contact-consent-tab";
 import { ConvertLeadDialog } from "@/components/contacts/convert-lead-dialog";
 import { RecordProfileLayout } from "@/components/contacts/record-profile-layout";
 import { SendDocumentRequestDialog } from "@/components/outreach/send-document-request-dialog";
@@ -602,6 +603,7 @@ export function ContactRecordView({
         <TabsList variant="line" className="w-full justify-start border-b bg-transparent">
           <TabsTrigger value="catch-up">Catch-up</TabsTrigger>
           <TabsTrigger value="activities">Activities</TabsTrigger>
+          <TabsTrigger value="consent">Consent</TabsTrigger>
         </TabsList>
 
         <TabsContent value="catch-up" className="mt-4 space-y-4">
@@ -644,6 +646,10 @@ export function ContactRecordView({
             </SelectContent>
           </Select>
           <TimelineList activities={activities} filter={activityFilter} />
+        </TabsContent>
+
+        <TabsContent value="consent" className="mt-4">
+          <ContactConsentTab contact={contact} />
         </TabsContent>
       </Tabs>
     </div>

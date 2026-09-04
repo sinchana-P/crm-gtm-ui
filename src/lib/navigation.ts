@@ -96,7 +96,6 @@ export const NAV_ITEMS: NavItem[] = [
       { id: "settings-assignment", label: "Assignment Rules", href: "/settings/assignment", icon: "Route", section: "settings" },
       { id: "settings-scoring", label: "Lead Scoring", href: "/settings/scoring", icon: "Target", section: "settings" },
       { id: "settings-fields", label: "Custom Fields", href: "/settings/fields", icon: "Columns3", section: "settings" },
-      { id: "settings-consent", label: "Consent & Privacy", href: "/settings/consent", icon: "Lock", section: "settings" },
     ],
   },
   {

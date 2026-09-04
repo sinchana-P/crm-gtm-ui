@@ -57,7 +57,6 @@ export const ADMIN_ONLY_PATHS = [
   "/settings/assignment",
   "/settings/scoring",
   "/settings/fields",
-  "/settings/consent",
   "/settings/integrations",
   "/settings/whatsapp",
 ];

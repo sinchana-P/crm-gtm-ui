@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Columns3, Lock, Plug, Puzzle, Route, Settings, Target, User } from "lucide-react";
+import { Bell, Columns3, Plug, Puzzle, Route, Settings, ShieldCheck, Target, User } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useViewScope } from "@/hooks/use-view-scope";
@@ -32,16 +32,16 @@ const adminSections = [
     icon: Columns3,
   },
   {
-    title: "Consent & privacy",
-    description: "Default consent policies and preference center.",
-    href: "/settings/consent",
-    icon: Lock,
-  },
-  {
     title: "Integrations",
     description: "Kaayaka, e-sign providers, WhatsApp, and email sync.",
     href: "/settings/integrations",
     icon: Plug,
+  },
+  {
+    title: "Consent & Privacy",
+    description: "The catalog of consents this organization captures, tracks, and manages.",
+    href: "/settings/consent",
+    icon: ShieldCheck,
   },
 ];
 
@@ -71,7 +71,7 @@ export default function SettingsPage() {
         description={
           isRep
             ? `Personal preferences for ${rep.name}. Organization settings require Admin view.`
-            : "Configure plugins, routing, scoring, fields, consent, and integrations."
+            : "Configure plugins, routing, scoring, fields, and integrations."
         }
       />
 
