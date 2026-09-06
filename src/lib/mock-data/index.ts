@@ -1474,9 +1474,45 @@ export const SNIPPETS = [
 ];
 
 export const MOCK_FORMS: MarketingForm[] = [
-  { id: "f1", name: "Demo Request", status: "published", submissions: 284, conversionRate: 12.4, abandonmentRecoverySequenceId: "s1", recaptchaEnabled: true, steps: 3, updatedAt: "2026-06-22T00:00:00Z" },
-  { id: "f2", name: "Newsletter Signup", status: "published", submissions: 1420, conversionRate: 28.1, recaptchaEnabled: false, steps: 1, updatedAt: "2026-06-18T00:00:00Z" },
-  { id: "f3", name: "Event Registration — Connect Summit", status: "draft", submissions: 0, conversionRate: 0, recaptchaEnabled: true, steps: 4, updatedAt: "2026-06-24T00:00:00Z" },
+  {
+    id: "f1", name: "Demo Request", status: "published", submissions: 284, conversionRate: 12.4,
+    abandonmentRecoverySequenceId: "s1", recaptchaEnabled: true, steps: 3, updatedAt: "2026-06-22T00:00:00Z",
+    submitLabel: "Request demo",
+    fields: [
+      { id: "f1-fn", type: "text", label: "Full name", mapTo: "name", required: true, width: "full" },
+      { id: "f1-em", type: "email", label: "Work email", mapTo: "email", required: true, width: "half" },
+      { id: "f1-ph", type: "phone", label: "Phone", mapTo: "phone", required: false, width: "half" },
+      { id: "f1-co", type: "text", label: "Company", mapTo: "company", required: false, width: "full" },
+    ],
+    consents: [
+      { key: "comm.email.marketing", label: "Do you want product and marketing emails?", yesLabel: "Yes, I want these emails" },
+    ],
+  },
+  {
+    id: "f2", name: "Newsletter Signup", status: "published", submissions: 1420, conversionRate: 28.1,
+    recaptchaEnabled: false, steps: 1, updatedAt: "2026-06-18T00:00:00Z",
+    submitLabel: "Subscribe",
+    fields: [
+      { id: "f2-em", type: "email", label: "Email address", mapTo: "email", required: true, width: "full" },
+    ],
+    consents: [
+      { key: "comm.email.marketing", label: "Send me the newsletter and marketing updates?", yesLabel: "Yes, subscribe me" },
+    ],
+  },
+  {
+    id: "f3", name: "Event Registration — Connect Summit", status: "draft", submissions: 0, conversionRate: 0,
+    recaptchaEnabled: true, steps: 4, updatedAt: "2026-06-24T00:00:00Z",
+    submitLabel: "Register",
+    fields: [
+      { id: "f3-fn", type: "text", label: "Full name", mapTo: "name", required: true, width: "full" },
+      { id: "f3-em", type: "email", label: "Email", mapTo: "email", required: true, width: "half" },
+      { id: "f3-ph", type: "phone", label: "Mobile (for event SMS)", mapTo: "phone", required: false, width: "half" },
+    ],
+    consents: [
+      { key: "comm.email.marketing", label: "Do you want marketing emails about future events?", yesLabel: "Yes, email me" },
+      { key: "comm.sms.marketing", label: "Send event reminders by SMS?", yesLabel: "Yes, text me" },
+    ],
+  },
 ];
 
 export const MOCK_EMAIL_TEMPLATES: EmailTemplate[] = [

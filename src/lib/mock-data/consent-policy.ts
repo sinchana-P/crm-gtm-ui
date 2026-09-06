@@ -114,18 +114,6 @@ export const CONSENT_CATALOG: ConsentDefinition[] = [
     captureVia: ["sms-keyword", "portal", "form"],
   },
   {
-    key: "comm.phone.outreach",
-    name: "Phone — marketing / outreach",
-    description: "Sales and marketing calls, separate from service calls.",
-    category: "communication",
-    basis: "consent",
-    defaultState: "neutral",
-    toggleable: true,
-    channel: "Phone",
-    durationKey: "refresh-24m",
-    captureVia: ["phone-confirm", "portal", "form"],
-  },
-  {
     key: "comm.chat.marketing",
     name: "WhatsApp / chat messaging",
     description: "Promotional and broadcast messages on chat channels.",
@@ -136,18 +124,6 @@ export const CONSENT_CATALOG: ConsentDefinition[] = [
     channel: "WhatsApp",
     durationKey: "refresh-24m",
     captureVia: ["portal", "form", "sms-keyword"],
-  },
-  {
-    key: "comm.push",
-    name: "Push notifications",
-    description: "Per-device app and browser push.",
-    category: "communication",
-    basis: "consent",
-    defaultState: "neutral",
-    toggleable: true,
-    channel: "Push",
-    durationKey: "none",
-    captureVia: ["portal"],
   },
 
   // ---- Data & AI ----
@@ -163,28 +139,16 @@ export const CONSENT_CATALOG: ConsentDefinition[] = [
     captureVia: ["portal", "form"],
   },
   {
-    key: "data.doc.read",
-    name: "Access, read & extract documents (OCR)",
+    key: "data.ai.docprocessing",
+    name: "AI document processing",
     description:
-      "Open submitted records and machine-read fields from them. Machine-reading is still reading, so OCR lives here.",
+      "Read, extract (OCR) and process your uploaded documents using AI — to summarize, classify, draft replies, and route. Uploading a document is not consent to process it with AI; this is that permission.",
     category: "data-ai",
     basis: "consent",
     defaultState: "neutral",
     toggleable: true,
     durationKey: "review-12m",
-    captureVia: ["upload", "portal", "esign"],
-  },
-  {
-    key: "data.ai.infer",
-    name: "AI processing (inference)",
-    description:
-      "Use AI to act on their data now — summarize, classify, draft a reply, route. Requires document access first.",
-    category: "data-ai",
-    basis: "consent",
-    defaultState: "neutral",
-    toggleable: true,
-    durationKey: "review-12m",
-    captureVia: ["upload", "portal"],
+    captureVia: ["upload", "portal", "esign", "form"],
   },
 
   // ---- Recording & tracking ----
@@ -319,14 +283,9 @@ export const AI_LADDER: LadderStep[] = [
     description: "Customer uploaded personal records through the portal.",
   },
   {
-    key: "data.doc.read",
-    title: "Read & extract (OCR)",
-    description: "Open the record and machine-read fields from it.",
-  },
-  {
-    key: "data.ai.infer",
-    title: "AI processing (inference)",
-    description: "Summarize, classify, draft a reply, route — using AI on their data now.",
+    key: "data.ai.docprocessing",
+    title: "AI document processing",
+    description: "Read, extract (OCR) and process the document with AI — summarize, classify, draft, route.",
   },
 ];
 
@@ -371,6 +330,19 @@ export const DURATION_BY_KEY: Record<string, DurationPolicy> = Object.fromEntrie
 
 export function definitionsByCategory(category: ConsentCategory): ConsentDefinition[] {
   return CONSENT_CATALOG.filter((d) => d.category === category);
+}
+
+/**
+ * Consents you actively ASK for (opt-in) — the ones offered in a form's consent
+ * section and measured in consent analytics. Excludes tracked-only lawful-basis
+ * entries (contract / legitimate interest) that are recorded, never asked.
+ */
+export function collectableConsents(): ConsentDefinition[] {
+  return CONSENT_CATALOG.filter((d) => d.toggleable);
+}
+
+export function definitionByKey(key: string): ConsentDefinition | undefined {
+  return CONSENT_CATALOG.find((d) => d.key === key);
 }
 
 export function captureSourceById(id: string): CaptureSource | undefined {

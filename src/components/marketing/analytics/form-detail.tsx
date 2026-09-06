@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, BarChart3, ListChecks, RefreshCw, Share2 } from "lucide-react";
+import { ArrowLeft, BarChart3, ListChecks, PenSquare, RefreshCw, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { getFormUtmData, MOCK_FORMS } from "@/lib/mock-data";
 import { ShareFormDialog } from "./share-form-dialog";
 import { FormResponses } from "./form-responses";
 import { FormUtmDashboard } from "./form-utm-dashboard";
+import { FormBuilder } from "@/components/marketing/forms/form-builder";
 
 interface Props {
   id: string;
@@ -19,7 +20,7 @@ interface Props {
 
 /** Merged per-form detail: form responses + UTM analytics under one header. */
 export function FormDetail({ id }: Props) {
-  const [tab, setTab] = useState("responses");
+  const [tab, setTab] = useState("build");
   const [shareOpen, setShareOpen] = useState(false);
 
   const form = MOCK_FORMS.find((f) => f.id === id);
@@ -56,8 +57,11 @@ export function FormDetail({ id }: Props) {
         </span>
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v ?? "responses")}>
+      <Tabs value={tab} onValueChange={(v) => setTab(v ?? "build")}>
         <TabsList>
+          <TabsTrigger value="build">
+            <PenSquare className="size-4" /> Build
+          </TabsTrigger>
           <TabsTrigger value="responses">
             <ListChecks className="size-4" /> Responses
           </TabsTrigger>
@@ -65,6 +69,13 @@ export function FormDetail({ id }: Props) {
             <BarChart3 className="size-4" /> UTM Analytics
           </TabsTrigger>
         </TabsList>
+        <TabsContent value="build" className="mt-6">
+          {form ? (
+            <FormBuilder form={form} />
+          ) : (
+            <p className="text-sm text-muted-foreground">Form not found.</p>
+          )}
+        </TabsContent>
         <TabsContent value="responses" className="mt-6">
           <FormResponses data={data} />
         </TabsContent>

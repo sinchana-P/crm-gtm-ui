@@ -612,6 +612,24 @@ export interface MarketingForm {
   recaptchaEnabled: boolean;
   steps: number;
   updatedAt: string;
+  /** Field definitions built in the form builder. */
+  fields?: LandingFormField[];
+  submitLabel?: string;
+  /** Consent section — each included consent renders as its own opt-in on the form. */
+  consents?: FormConsentItem[];
+}
+
+/**
+ * One consent the visitor answers in a form's consent section. Renders as a
+ * required Yes/No dropdown — the visitor must choose (can't leave it blank).
+ */
+export interface FormConsentItem {
+  /** consent-policy key this answer records. */
+  key: string;
+  /** The question / statement shown above the Yes/No dropdown. */
+  label: string;
+  /** Wording for the positive option (e.g. "Yes, I want these emails"). Defaults to "Yes". */
+  yesLabel?: string;
 }
 
 export type EmailBlockType =
@@ -1602,6 +1620,8 @@ export interface LandingFormField {
   required?: boolean;
   /** CRM contact/lead field this maps to on submit. */
   mapTo?: string;
+  /** For type "consent": which consent (consent-policy key) this field collects. Required for consent fields. */
+  consentKey?: string;
   options?: string[];
   /** Only shown after a returning visitor is known (progressive profiling). */
   progressive?: boolean;

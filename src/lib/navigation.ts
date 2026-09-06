@@ -49,6 +49,7 @@ export const NAV_ITEMS: NavItem[] = [
     children: [
       { id: "segments", label: "Segments", href: "/marketing/segments", icon: "Filter", section: "marketing", plugin: "marketing" },
       { id: "forms", label: "Forms", href: "/marketing/forms", icon: "FileInput", section: "marketing", plugin: "marketing" },
+      { id: "consent-insights", label: "Consent Insights", href: "/marketing/consent-insights", icon: "ShieldCheck", section: "marketing", plugin: "marketing" },
     ],
   },
   {

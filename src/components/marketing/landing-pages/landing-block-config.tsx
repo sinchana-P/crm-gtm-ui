@@ -1,11 +1,9 @@
 "use client";
 
-import { AlignCenter, AlignLeft, AlignRight, GripVertical, Plus, Trash2 } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Plus, Trash2 } from "lucide-react";
 import type {
   LandingBlock,
   LandingFaqItem,
-  LandingFormField,
-  LandingFormFieldType,
   LandingPricingTier,
   LandingStatItem,
   LandingTestimonialItem,
@@ -24,10 +22,9 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { LANDING_BLOCK_META, createLandingId } from "@/components/marketing/landing-pages/landing-shared";
+import { FormFieldsEditor } from "@/components/marketing/forms/form-fields-editor";
 
 const SOCIAL_OPTIONS = ["twitter", "linkedin", "instagram", "facebook", "youtube", "github"];
-const CRM_FIELDS = ["name", "firstName", "lastName", "email", "phone", "company", "jobTitle", "country", "custom"];
-const FIELD_TYPES: LandingFormFieldType[] = ["text", "email", "phone", "textarea", "select", "checkbox", "consent", "date", "number", "hidden"];
 
 function Field({ label, action, className, children }: { label: string; action?: React.ReactNode; className?: string; children: React.ReactNode }) {
   return (
@@ -352,38 +349,11 @@ function PricingEditor({ tiers, onChange }: { tiers: LandingPricingTier[]; onCha
 function FormEditor({ block, onChange }: { block: LandingBlock; onChange: (patch: Partial<LandingBlock>) => void }) {
   const form = block.form!;
   const setForm = (p: Partial<NonNullable<LandingBlock["form"]>>) => onChange({ form: { ...form, ...p } });
-  const patchField = (id: string, p: Partial<LandingFormField>) => setForm({ fields: form.fields.map((f) => (f.id === id ? { ...f, ...p } : f)) });
-  const addField = () => setForm({ fields: [...form.fields, { id: createLandingId("fld"), type: "text", label: "New field", required: false, width: "full" }] });
 
   return (
     <div className="space-y-4">
-      <Field label="Fields" action={<Button variant="outline" size="sm" className="h-7" onClick={addField}><Plus className="size-3.5" /> Add field</Button>}>
-        <div className="space-y-2">
-          {form.fields.map((f) => (
-            <div key={f.id} className="space-y-2 rounded-lg border p-2.5">
-              <div className="flex items-center gap-2">
-                <GripVertical className="size-4 shrink-0 text-muted-foreground" />
-                <Input className="h-7 flex-1" value={f.label} onChange={(e) => patchField(f.id, { label: e.target.value })} placeholder="Field label" />
-                <Button variant="ghost" size="icon-sm" onClick={() => setForm({ fields: form.fields.filter((x) => x.id !== f.id) })}><Trash2 className="size-4" /></Button>
-              </div>
-              <div className="flex items-center gap-2">
-                <Select value={f.type} onValueChange={(v) => patchField(f.id, { type: v as LandingFormFieldType })}>
-                  <SelectTrigger className="h-7 flex-1 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>{FIELD_TYPES.map((t) => <SelectItem key={t} value={t} className="capitalize text-xs">{t}</SelectItem>)}</SelectContent>
-                </Select>
-                <Select value={f.mapTo ?? "custom"} onValueChange={(v) => patchField(f.id, { mapTo: v ?? "custom" })}>
-                  <SelectTrigger className="h-7 flex-1 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>{CRM_FIELDS.map((c) => <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-4 text-xs">
-                <label className="flex items-center gap-1.5"><Switch checked={!!f.required} onCheckedChange={(v) => patchField(f.id, { required: v })} /> Required</label>
-                <label className="flex items-center gap-1.5"><Switch checked={f.width === "half"} onCheckedChange={(v) => patchField(f.id, { width: v ? "half" : "full" })} /> Half width</label>
-                <label className="flex items-center gap-1.5"><Switch checked={!!f.progressive} onCheckedChange={(v) => patchField(f.id, { progressive: v })} /> Progressive</label>
-              </div>
-            </div>
-          ))}
-        </div>
+      <Field label="Fields">
+        <FormFieldsEditor fields={form.fields} onChange={(fields) => setForm({ fields })} />
       </Field>
 
       <div className="space-y-3 border-t pt-3">

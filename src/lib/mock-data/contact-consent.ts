@@ -74,8 +74,8 @@ function baseStateFor(def: ConsentDefinition, contact: ContactRecord, s: number)
   if (def.key === "comm.chat.marketing") return contact.consent.whatsapp ? "opt-in" : "opt-out";
   if (def.key === "comm.sms.marketing") return contact.consent.sms ? "opt-in" : "neutral";
 
-  // Phone outreach frequently sits provisional (verbal, awaiting confirm).
-  if (def.key === "comm.phone.outreach") {
+  // Call recording sometimes sits provisional (verbal at call start, awaiting confirm).
+  if (def.key === "rec.call") {
     return s % 3 === 0 ? "provisional" : s % 3 === 1 ? "opt-in" : "neutral";
   }
 
